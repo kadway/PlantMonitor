@@ -10,10 +10,11 @@
 
 #include "stm32f4xx_conf.h"
 #include "stm32_ub_uart.h"
+#include "rtc.h"
 
 void initHW();
 void ADC_Config(uint16_t *ADC3ConvertedValue);
-
+void I2C_Config(void);
 
 /*
  * ADC Pins Available
@@ -77,6 +78,5 @@ void ADC_Config(uint16_t *ADC3ConvertedValue);
  * PB 8,9
  *
  */
-
 
 #endif /* INC_PLATFORM_H_ */

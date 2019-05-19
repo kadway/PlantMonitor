@@ -29,7 +29,8 @@ void DetectButtonPress(void*);
 void ToggleLED_IPC(void*);
 void GetSensorValues(void*);
 
-
+// statically allocated
+struct tm *time_pt=NULL;
 
 /*Task handles*/
 TaskHandle_t sensorTaskHndl = NULL;
@@ -176,8 +177,13 @@ void GetSensorValues(void *pvParameters){
 void ToggleLED_Timer(void *pvParameters){
 	 for (;;) {
 		// Perform action here.
+		char buffer[20];
 		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-		vTaskDelay(1000 * configTICK_RATE_HZ / 1000 );
+		time_pt = rtc_get_time();
+		sprintf(buffer, "Time is %d:%d:%d", i, time_pt->hour, time_pt->min, time_pt->sec);
+		UB_Uart_SendString(COM2, buffer, LFCR);
+
+		vTaskDelay(1000 * configTICK_RATE_HZ / 1000);
 	}
 }
 

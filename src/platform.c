@@ -47,8 +47,102 @@ void initHW()
 	GPIO_InitStructure2.GPIO_OType = GPIO_OType_PP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure2);
 
+	//Configure and start I2c
+	I2C_Config();
+
+	rtc_init();
 
 }
+
+void I2C_Config(void){
+
+	/*
+	 * I2C used
+	 * PB6 - I2C1 SCL
+	 * PB7 - I2C1 SDA
+	 *
+	 */
+	GPIO_InitTypeDef GPIO_InitStructure;
+	I2C_InitTypeDef I2C_InitStruct;
+
+	 /* 1. Enable peripheral clock using RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2Cx, ENABLE)
+	  *             function for I2C1, I2C2 or I2C3. */
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+
+			  /*          2. Enable SDA, SCL  and SMBA (when used) GPIO clocks using
+	  *             RCC_AHBPeriphClockCmd() function. */
+
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
+
+	/*          3. Peripherals alternate function:
+	 *                 - Connect the pin to the desired peripherals' Alternate
+	 *                   Function (AF) using GPIO_PinAFConfig() function
+	 *                 - Configure the desired pin in alternate function by:
+	 *                   GPIO_InitStruct->GPIO_Mode = GPIO_Mode_AF
+	 *                 - Select the type, pull-up/pull-down and output speed via
+	 *                   GPIO_PuPd, GPIO_OType and GPIO_Speed members
+	 *                 - Call GPIO_Init() function
+	 *                 Recommended configuration is Push-Pull, Pull-up, Open-Drain.
+	 *                 Add an external pull up if necessary (typically 4.7 KOhm).  */
+
+	GPIO_PinAFConfig(GPIOB, GPIO_Pin_6, GPIO_AF_I2C1); //SCL
+	GPIO_PinAFConfig(GPIOB, GPIO_Pin_7, GPIO_AF_I2C1); //SDA
+
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6|GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+
+	/*          4. Program the Mode, duty cycle , Own address, Ack, Speed and Acknowledged
+	 *             Address using the I2C_Init() function.
+	  */
+	I2C_DeInit(I2C1);
+	I2C_InitStruct.I2C_ClockSpeed = 100000; // 100kHz
+	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;   // I2C mode
+	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;   // 50% duty cycle --> standard
+	I2C_InitStruct.I2C_OwnAddress1 = 0x00;   // own address, not relevant in master mode
+	I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;   // Enable acknowledge when reading
+	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit; // set address length
+	I2C_Init(I2C1, &I2C_InitStruct);   // init I2C1
+
+	  /*          5. Optionally you can enable/configure the following parameters without
+	  *             re-initialization (i.e there is no need to call again I2C_Init() function):
+	  *              - Enable the acknowledge feature using I2C_AcknowledgeConfig() function
+	  *              - Enable the dual addressing mode using I2C_DualAddressCmd() function
+	  *              - Enable the general call using the I2C_GeneralCallCmd() function
+	  *              - Enable the clock stretching using I2C_StretchClockCmd() function
+	  *              - Enable the fast mode duty cycle using the I2C_FastModeDutyCycleConfig()
+	  *                function.
+	  *              - Configure the NACK position for Master Receiver mode in case of
+	  *                2 bytes reception using the function I2C_NACKPositionConfig().
+	  *              - Enable the PEC Calculation using I2C_CalculatePEC() function
+	  *              - For SMBus Mode:
+	  *                   - Enable the Address Resolution Protocol (ARP) using I2C_ARPCmd() function
+	  *                   - Configure the SMBusAlert pin using I2C_SMBusAlertConfig() function
+	  *
+	  *          6. Enable the NVIC and the corresponding interrupt using the function
+	  *             I2C_ITConfig() if you need to use interrupt mode.
+	  *
+	  *          7. When using the DMA mode
+	  *                   - Configure the DMA using DMA_Init() function
+	  *                   - Active the needed channel Request using I2C_DMACmd() or
+	  *                     I2C_DMALastTransferCmd() function.
+	  *              @note When using DMA mode, I2C interrupts may be used at the same time to
+	  *                    control the communication flow (Start/Stop/Ack... events and errors).
+	  *
+	  *          8. Enable the I2C using the I2C_Cmd() function.
+	  */
+
+    I2C_Cmd(I2C1, ENABLE);
+
+	  /*          9. Enable the DMA using the DMA_Cmd() function when using DMA mode in the
+	  *             transfers.
+	  */
+}
+
 
 void ADC_Config(uint16_t *ADC3ConvertedValue)
 {
