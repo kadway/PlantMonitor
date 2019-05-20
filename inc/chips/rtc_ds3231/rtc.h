@@ -18,6 +18,7 @@
 
 #include <stdbool.h>
 #include "hal_i2c.h"
+#include "platform.h"
 
 #define DS1307_SLAVE_ADDR 0b11010000
 

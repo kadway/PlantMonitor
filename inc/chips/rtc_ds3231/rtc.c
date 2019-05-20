@@ -59,11 +59,13 @@
 
 #include "rtc.h"
 
-#define RTC_ADDR 0x68 // I2C address
+//#define RTC_ADDR 0x68 // I2C address not shifted
+#define RTC_ADDR 0xD0 // I2C address shifted right
 #define CH_BIT 7 // clock halt bit
 
 // statically allocated structure for time value
 struct tm time;
+char buf[20];
 
 uint8_t dec2bcd(uint8_t d)
 {
@@ -106,11 +108,16 @@ void rtc_init(void)
 	// 3) Read back the value
 	//   equal to the one written: DS1307, write back saved value and return
 	//   different from written:   DS3231
-
+	UB_Uart_SendString(COM2, "RTC Init", LFCR);
 	uint8_t temp1 = rtc_read_byte(0x11);
-	uint8_t temp2 = rtc_read_byte(0x12);
+	sprintf(buf, "got %#04x", temp1);
+	UB_Uart_SendString(COM2, buf, LFCR);
 
-	rtc_write_byte(0xee, 0x11);
+	uint8_t temp2 = rtc_read_byte(0x12);
+	sprintf(buf, "got %#04x", temp2);
+	UB_Uart_SendString(COM2, buf, LFCR);
+
+	/*rtc_write_byte(0xee, 0x11);
 	rtc_write_byte(0xdd, 0x12);
 
 	if (rtc_read_byte(0x11) == 0xee && rtc_read_byte(0x12) == 0xdd) {
@@ -121,7 +128,7 @@ void rtc_init(void)
 	}
 	else {
 		s_is_ds3231 = true;
-	}
+	}*/
 }
 
 // Autodetection

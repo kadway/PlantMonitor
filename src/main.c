@@ -178,6 +178,7 @@ void ToggleLED_Timer(void *pvParameters){
 	 for (;;) {
 		// Perform action here.
 		char buffer[20];
+		UB_Uart_SendString(COM2, "ds3231 task", LFCR);
 		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 		time_pt = rtc_get_time();
 		sprintf(buffer, "Time is %d:%d:%d", i, time_pt->hour, time_pt->min, time_pt->sec);
