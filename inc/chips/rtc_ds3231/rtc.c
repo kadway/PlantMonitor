@@ -59,12 +59,15 @@
 
 #include "rtc.h"
 
+
 //#define RTC_ADDR 0x68 // I2C address not shifted
 #define RTC_ADDR 0xD0 // I2C address shifted right
 #define CH_BIT 7 // clock halt bit
 
 // statically allocated structure for time value
 struct tm time;
+
+//for debug
 char buf[20];
 
 uint8_t dec2bcd(uint8_t d)
@@ -77,67 +80,80 @@ uint8_t bcd2dec(uint8_t b)
   return ((b/16 * 10) + (b % 16));
 }
 
-uint8_t rtc_read_byte(uint8_t offset)
+void rtc_read_byte(uint8_t* status, uint8_t offset)
 {
-	uint8_t received_data;
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, offset);
 	I2C_stop(I2C1);
 
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Receiver); // start a transmission in Master receiver mode
-	received_data = I2C_read_nack(I2C1); // read one byte and don't request another byte, stop transmission
-	return received_data;
+	*status = I2C_read_nack(I2C1); // read one byte and don't request another byte, stop transmission
 }
 
-void rtc_write_byte(uint8_t b, uint8_t offset)
+void rtc_write_byte(uint8_t* b, uint8_t offset)
 {
+//	char buf[25];
+//	sprintf(buf, "write byte: %#04x", *b);
+//	UB_Uart_SendString(COM2, buf, LFCR);
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, offset);
-	I2C_write(I2C1, b);
+	Delay(0xFFFF);
+	I2C_write(I2C1, *b);
 	I2C_stop(I2C1);
 }
 
-static bool s_is_ds1307 = false;
-static bool s_is_ds3231 = true;
+bool rtc_check_status(uint8_t* status){
+
+	if (*status==0x00){
+		return 0;
+	}
+	else{
+		return 1;
+	}
+}
 
 void rtc_init(void)
 {
-	// Attempt autodetection:
-	// 1) Read and save temperature register
-	// 2) Write a value to temperature register
-	// 3) Read back the value
-	//   equal to the one written: DS1307, write back saved value and return
-	//   different from written:   DS3231
-	UB_Uart_SendString(COM2, "RTC Init", LFCR);
-	uint8_t temp1 = rtc_read_byte(0x11);
-	sprintf(buf, "got %#04x", temp1);
+	//bit fields for control and status registers
+	ds3231_control control;
+	ds3231_status status;
+
+	//UB_Uart_SendString(COM2, "RTC INIT.", LFCR);
+	do{
+		control.INTCN=0;
+		control.A1IE=0;
+		control.A2IE=0;
+		control.BBSQW=0;
+		control.EOSCN=0;
+
+		status.A1F=0;
+		status.A2F=0;
+		status.EN32kHz=0;
+		status.OSF=0;
+
+		rtc_write_byte((uint8_t*)&control, CONTROL_ADDR);
+		rtc_write_byte((uint8_t*)&status, STATUS_ADDR);
+
+		//status 0x00 is good (Oscillator is running, device not busy and no alarm flag is set)
+	}while(rtc_check_status((uint8_t*) &status));
+
+	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
+	sprintf(buf, "Status: %#04x", status);
 	UB_Uart_SendString(COM2, buf, LFCR);
 
-	uint8_t temp2 = rtc_read_byte(0x12);
-	sprintf(buf, "got %#04x", temp2);
-	UB_Uart_SendString(COM2, buf, LFCR);
+#ifdef SETTIME
+	time.sec=0;
+	time.min=11;
+	time.hour=12;
+	time.mday=25;
+	time.mon=5;
+	time.year=19;
+	time.wday=2;
+	rtc_set_time(&time);
+#endif
 
-	/*rtc_write_byte(0xee, 0x11);
-	rtc_write_byte(0xdd, 0x12);
-
-	if (rtc_read_byte(0x11) == 0xee && rtc_read_byte(0x12) == 0xdd) {
-		s_is_ds1307 = true;
-		// restore values
-		rtc_write_byte(temp1, 0x11);
-		rtc_write_byte(temp2, 0x12);
-	}
-	else {
-		s_is_ds3231 = true;
-	}*/
 }
 
-// Autodetection
-bool rtc_is_ds1307(void) { return s_is_ds1307; }
-bool rtc_is_ds3231(void) { return s_is_ds3231; }
-
-// Autodetection override
-void rtc_set_ds1307(void) { s_is_ds1307 = true;   s_is_ds3231 = false; }
-void rtc_set_ds3231(void) { s_is_ds1307 = false;  s_is_ds3231 = true;  }
 
 struct tm* rtc_get_time(void)
 {
@@ -146,6 +162,7 @@ struct tm* rtc_get_time(void)
 
 	// read 7 bytes starting from register 0
 	// sec, min, hour, day-of-week, date, month, year
+
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, 0x0);
 	I2C_stop(I2C1);
@@ -167,8 +184,9 @@ struct tm* rtc_get_time(void)
 	time.hour = bcd2dec(rtc[2]);
 	time.mday = bcd2dec(rtc[4]);
 	time.mon = bcd2dec(rtc[5] & 0x1F); // returns 1-12
-	century = (rtc[5] & 0x80) >> 7;
-	time.year = century == 1 ? 2000 + bcd2dec(rtc[6]) : 1900 + bcd2dec(rtc[6]); // year 0-99
+	//century = (rtc[5] & 0x80) >> 7;
+	//time.year = century == 1 ? 2000 + bcd2dec(rtc[6]) : 1900 + bcd2dec(rtc[6]); // year 0-99
+	time.year = bcd2dec(rtc[6]); // year 0-99
 	time.wday = bcd2dec(rtc[3]); // returns 1-7
 
 	if (time.hour == 0) {
@@ -212,7 +230,7 @@ void rtc_set_time(struct tm* tm_)
 {
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, 0x0);
-
+	Delay(0xFFFF);
 	uint8_t century;
 	if (tm_->year > 2000) {
 		century = 0x80;
@@ -224,13 +242,18 @@ void rtc_set_time(struct tm* tm_)
 
 	// clock halt bit is 7th bit of seconds: this is always cleared to start the clock
 	I2C_write(I2C1, dec2bcd(tm_->sec)); // seconds
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->min)); // minutes
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->hour)); // hours
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->wday)); // day of week
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->mday)); // day
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->mon) + century); // month
+	Delay(0x0FFF);
 	I2C_write(I2C1, dec2bcd(tm_->year)); // year
-
 	I2C_stop(I2C1);
 }
 
@@ -249,12 +272,11 @@ void rtc_set_time_s(uint8_t hour, uint8_t min, uint8_t sec)
 
 void ds3231_get_temp_int(int8_t* i, uint8_t* f)
 {
+	//UB_Uart_SendString(COM2, "Get temperature", LFCR);
 	uint8_t msb, lsb;
 	
 	*i = 0;
 	*f = 0;
-	
-	if (s_is_ds1307) return; // only valid on DS3231
 
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	// temp registers 0x11 and 0x12
@@ -274,14 +296,18 @@ void ds3231_get_temp_int(int8_t* i, uint8_t* f)
 	*f = (lsb >> 6) * 25;
 
 	// float value can be read like so:
-	// float temp = ((((short)msb << 8) | (short)lsb) >> 6) / 4.0f;
+	 //float temp = ((((short)msb << 8) | (short)lsb) >> 6) / 4.0f;
 
 }
 
-void rtc_force_temp_conversion(uint8_t block)
-{
-	if (s_is_ds1307) return; // only valid on DS3231
+void readTemperatureRTC(int8_t *integer, uint8_t *fractional){
+	//UB_Uart_SendString(COM2, "Read temperature RTC", LFCR);
+	//rtc_force_temp_conversion();
+	ds3231_get_temp_int(integer, fractional);
+};
 
+void rtc_force_temp_conversion(void){
+	UB_Uart_SendString(COM2, "Force temperature conversion", LFCR);
 	// read control register (0x0E)
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, 0x0E);
@@ -295,10 +321,9 @@ void rtc_force_temp_conversion(uint8_t block)
 	// write new control register value
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, 0x0E);
+	Delay(0x0FFF);
 	I2C_write(I2C1, ctrl);
 	I2C_stop(I2C1);
-
-	if (!block) return;
 	
 	// Temp conversion is ready when control register becomes 0
 	do {
@@ -313,156 +338,69 @@ void rtc_force_temp_conversion(uint8_t block)
 	} while ((I2C_read_nack(I2C1) & 0b00100000) != 0);
 }
 
-
-//void rtc_SQW_enable(bool enable)
-//{
-//	if (s_is_ds1307) {
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x07);
-//		twi_end_transmission();
-//
-//		// read control
-//   		twi_request_from(RTC_ADDR, 1);
-//		uint8_t control = twi_receive();
-//
-//		if (enable)
-//			control |=  0b00010000; // set SQWE to 1
-//		else
-//			control &= ~0b00010000; // set SQWE to 0
-//
-//		// write control back
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x07);
-//		twi_send_byte(control);
-//		twi_end_transmission();
-//
-//	}
-//	else { // DS3231
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x0E);
-//		twi_end_transmission();
-//
-//		// read control
-//   		twi_request_from(RTC_ADDR, 1);
-//		uint8_t control = twi_receive();
-//
-//		if (enable) {
-//			control |=  0b01000000; // set BBSQW to 1
-//			control &= ~0b00000100; // set INTCN to 0
-//		}
-//		else {
-//			control &= ~0b01000000; // set BBSQW to 0
-//		}
-//
-//		// write control back
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x0E);
-//		twi_send_byte(control);
-//		twi_end_transmission();
-//	}
-//}
-//
-//void rtc_SQW_set_freq(enum RTC_SQW_FREQ freq)
-//{
-//	if (s_is_ds1307) {
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x07);
-//		twi_end_transmission();
-//
-//		// read control (uses bits 0 and 1)
-//   		twi_request_from(RTC_ADDR, 1);
-//		uint8_t control = twi_receive();
-//
-//		control &= ~0b00000011; // Set to 0
-//		control |= freq; // Set freq bitmask
-//
-//		// write control back
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x07);
-//		twi_send_byte(control);
-//		twi_end_transmission();
-//
-//	}
-//	else { // DS3231
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x0E);
-//		twi_end_transmission();
-//
-//		// read control (uses bits 3 and 4)
-//   		twi_request_from(RTC_ADDR, 1);
-//		uint8_t control = twi_receive();
-//
-//		control &= ~0b00011000; // Set to 0
-//		control |= (freq << 4); // Set freq bitmask
-//
-//		// write control back
-//		twi_begin_transmission(RTC_ADDR);
-//		twi_send_byte(0x0E);
-//		twi_send_byte(control);
-//		twi_end_transmission();
-//	}
-//}
-//
-//void rtc_osc32kHz_enable(bool enable)
-//{
-//	if (!s_is_ds3231) return;
-//
-//	twi_begin_transmission(RTC_ADDR);
-//	twi_send_byte(0x0F);
-//	twi_end_transmission();
-//
-//	// read status
-//	twi_request_from(RTC_ADDR, 1);
-//	uint8_t status = twi_receive();
-//
-//	if (enable)
-//		status |= 0b00001000; // set to 1
-//	else
-//		status &= ~0b00001000; // Set to 0
-//
-//	// write status back
-//	twi_begin_transmission(RTC_ADDR);
-//	twi_send_byte(0x0F);
-//	twi_send_byte(status);
-//	twi_end_transmission();
-//}
-
 // Alarm functionality
 
 void rtc_reset_alarm(void)
 {
-
 	// writing 0 to bit 7 of all four alarm 1 registers disables alarm
-	rtc_write_byte(0, 0x07); // second
-	rtc_write_byte(0, 0x08); // minute
-	rtc_write_byte(0, 0x09); // hour
-	rtc_write_byte(0, 0x0a); // day
-
+	uint8_t reset_val = 0;
+	//UB_Uart_SendString(COM2, "reset second", LFCR);
+	Delay(0x0FFF);
+	rtc_write_byte(&reset_val, A1M1_ADDR); // second
+	Delay(0x0FFF);
+	//UB_Uart_SendString(COM2, "reset min", LFCR);
+	rtc_write_byte(&reset_val, A1M2_ADDR); // minute
+	Delay(0x0FFF);
+	//UB_Uart_SendString(COM2, "reset hour", LFCR);
+	rtc_write_byte(&reset_val, A1M3_ADDR); // hour
+	//UB_Uart_SendString(COM2, "reset sec", LFCR);
+	Delay(0x0FFF);
+	rtc_write_byte(&reset_val, A1M4_ADDR); // day
 }
 
-// fixme: add an option to set whether or not the INTCN and Interrupt Enable flag is set when setting the alarm
+
 void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec)
 {
 	if (hour > 23) return;
 	if (min > 59) return;
 	if (sec > 59) return;
 
-	/*
-	 *  07h: A1M1:0  Alarm 1 seconds
-	 *  08h: A1M2:0  Alarm 1 minutes
-	 *  09h: A1M3:0  Alarm 1 hour (bit6 is am/pm flag in 12h mode)
-	 *  0ah: A1M4:1  Alarm 1 day/date (bit6: 1 for day, 0 for date)
-	 *  Sets alarm to fire when hour, minute and second matches
-	 */
-	rtc_write_byte(dec2bcd(sec),  0x07); // second
-	rtc_write_byte(dec2bcd(min),  0x08); // minute
-	rtc_write_byte(dec2bcd(hour), 0x09); // hour
-	rtc_write_byte(0b10000001,         0x0a); // day (upper bit must be set)
+	sec = dec2bcd(sec);
+	min = dec2bcd(min);
+	hour = dec2bcd(hour);
 
-	// clear alarm flag
-	uint8_t val = rtc_read_byte(0x0f);
-	rtc_write_byte(val & ~0b00000001, 0x0f);
-
+	uint8_t day = 0b10000001; // day (upper bit must be set)
+	//UB_Uart_SendString(COM2, "set sec", LFCR);
+	Delay(0x0FFF);
+	rtc_write_byte(&sec,  A1M1_ADDR); // second
+	Delay(0x0FFF);
+	//UB_Uart_SendString(COM2, "set min", LFCR);
+	rtc_write_byte(&min,  A1M2_ADDR); // minute
+	Delay(0x0FFF);
+	//UB_Uart_SendString(COM2, "set h", LFCR);
+	rtc_write_byte(&hour, A1M3_ADDR); // hour
+	Delay(0x0FFF);
+	//UB_Uart_SendString(COM2, "set day", LFCR);
+	rtc_write_byte(&day,  A1M4_ADDR); // day
+	Delay(0x0FFF);
+	ds3231_status status;
+	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
+	status.A1F = 0;// clear alarm 1 flag
+	status.A2F = 0;// clear alarm 2 flag
+	status.OSF = 0;// clear any OSC fault just in case
+	status.EN32kHz = 0;// disable square wave if not done before
+	//UB_Uart_SendString(COM2, "clear alarm", LFCR);
+	Delay(0x0FFF);
+	rtc_write_byte((uint8_t*) &status, STATUS_ADDR);
+	Delay(0x0FFF);
+	ds3231_control control;
+	rtc_read_byte((uint8_t*) &control, CONTROL_ADDR);
+	control.INTCN=1;//enable the INTERRUPT
+	control.A1IE=1; //enable alarm1
+	control.A2IE=0; //disable alarm2
+	//UB_Uart_SendString(COM2, "enable interrupt", LFCR);
+	Delay(0x0FFF);
+	rtc_write_byte((uint8_t*) &control, CONTROL_ADDR);
 }
 
 
@@ -474,11 +412,14 @@ void rtc_set_alarm(struct tm* tm_)
 
 void rtc_get_alarm_s(uint8_t* hour, uint8_t* min, uint8_t* sec)
 {
+	rtc_read_byte(sec, A1M1_ADDR);
+	*sec  = bcd2dec(*sec & ~0b10000000);
 
-	*sec  = bcd2dec(rtc_read_byte(0x07) & ~0b10000000);
-	*min  = bcd2dec(rtc_read_byte(0x08) & ~0b10000000);
-	*hour = bcd2dec(rtc_read_byte(0x09) & ~0b10000000);
+	rtc_read_byte(min, A1M2_ADDR);
+	*min  = bcd2dec(*min & ~0b10000000);
 
+	rtc_read_byte(hour, A1M3_ADDR);
+	*hour = bcd2dec(*hour & ~0b10000000);
 }
 
 struct tm* rtc_get_alarm(void)
@@ -496,12 +437,15 @@ bool rtc_check_alarm(void)
 {
 
 	// Alarm 1 flag (A1F) in bit 0
-	uint8_t val = rtc_read_byte(0x0f);
+	uint8_t alarm1;
+
+	rtc_read_byte(&alarm1, STATUS_ADDR);
 
 	// clear flag when set
-	if (val & 1)
-		rtc_write_byte(val & ~0b00000001, 0x0f);
+	if (alarm1 & 1)
+		alarm1 &= ~0b00000001;
+		rtc_write_byte(&alarm1, STATUS_ADDR);
 
-	return val & 1 ? 1 : 0;
+	return alarm1 & 1 ? 1 : 0;
 
 }

@@ -7,6 +7,9 @@
 
 #include "platform.h"
 
+#ifdef SETTIME
+struct tm time;
+#endif
 
 void initHW()
 {
@@ -16,7 +19,6 @@ void initHW()
 	// Init UART
 	// Com2 115200 Baud
 	UB_Uart_Init();
-
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure2;
@@ -50,8 +52,8 @@ void initHW()
 	//Configure and start I2c
 	I2C_Config();
 
+	//init the ds3231 rtc
 	rtc_init();
-
 }
 
 void I2C_Config(void){

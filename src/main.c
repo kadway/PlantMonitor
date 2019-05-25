@@ -31,13 +31,14 @@ void GetSensorValues(void*);
 
 // statically allocated
 struct tm *time_pt=NULL;
-
+extern struct tm time;
 /*Task handles*/
 TaskHandle_t sensorTaskHndl = NULL;
 
 /*Global Variables*/
 char sAdcValue[24];
 char sCounter[24];
+
 uint16_t ADC3ConvertedValue[5] = {0,0,0,0,0};
 
 xQueueHandle pbq;
@@ -50,17 +51,53 @@ int8_t dataReady = 0;
 
 //Timer Handler
 static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
+	char buf_time[45];
+	char buf_alarm[25];
+	char buf_temp[25];
+	int8_t integer;
+	uint8_t fractional;
+	ds3231_status status;
+
 	GPIOE -> ODR ^= GPIO_Pin_2;
 	sprintf(sCounter, "Timer %d", counter);
 	counter++;
 	UB_Uart_SendString(COM2,sCounter,LFCR);
 
+	//get current time
+	time_pt = rtc_get_time();
+
+	sprintf(buf_time, "Hora %d:%d:%d dia %d do mes %d do ano %d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon, time_pt->year);
+	UB_Uart_SendString(COM2, buf_time, LFCR);
+
+
+	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
+
+	if(~status.BSY){
+	//get current temperature
+		readTemperatureRTC(&integer, &fractional);
+		sprintf(buf_temp, "Temperatura: %d.%d ºC", integer, fractional);
+		UB_Uart_SendString(COM2, buf_temp, LFCR);
+	}
+	else
+	{
+		UB_Uart_SendString(COM2, "Device busy", LFCR);
+	}
+
+	//rtc_reset_alarm();
+	time_pt->sec = time_pt->sec + 5;
+	rtc_set_alarm(time_pt);
+	//rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec);
+	//UB_Uart_SendString(COM2, "Check alarm", LFCR);
+	time_pt = rtc_get_alarm();
+	sprintf(buf_alarm, "Alarme set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+	UB_Uart_SendString(COM2, buf_alarm, LFCR);
+
 	if( xSemaphore != NULL ){
-		if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
-			ADC_SoftwareStartConv(ADC3);
-			xSemaphoreGive( xSemaphore );
-		}
-	 }
+			if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
+				ADC_SoftwareStartConv(ADC3);
+				xSemaphoreGive( xSemaphore );
+			}
+		 }
 }
 
 int main(void){
@@ -83,7 +120,7 @@ int main(void){
 	}
 
 	timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
-			pdMS_TO_TICKS(4000), 			   /* period/time */
+			pdMS_TO_TICKS(10000), 			   /* period/time */
 			pdTRUE, 						   /* auto reload */
 			(void*)0, 					       /* timer ID */
 			vTimerCallback1SecExpired); 	   /* callback */
@@ -160,14 +197,15 @@ void GetSensorValues(void *pvParameters){
 				for(i=0; i<4; i++){
 					ADC3ConvertedValue[i] = (uint16_t) (( (uint32_t)ADC3ConvertedValue[i] * 3000) / 4096);
 				}
-				for(i=0; i<4; i++){
-					sprintf(sAdcValue, "Channel %d, value: %d mV", i, ADC3ConvertedValue[i]);
-					UB_Uart_SendString(COM2, sAdcValue, LFCR);
-				}
+//				for(i=0; i<4; i++){
+//					sprintf(sAdcValue, "Channel %d, value: %d mV", i, ADC3ConvertedValue[i]);
+//					UB_Uart_SendString(COM2, sAdcValue, LFCR);
+//				}
+				UB_Uart_SendString(COM2, "Adc ready", LFCR);
 				xSemaphoreGive( xSemaphore );
 			}
 		}
-		vTaskDelay(1000 * configTICK_RATE_HZ / 1000 );
+		vTaskDelay(13 * configTICK_RATE_HZ );
 	}
 }
 
@@ -175,16 +213,11 @@ void GetSensorValues(void *pvParameters){
  * TASK 1: Toggle LED via RTOS Timer
  */
 void ToggleLED_Timer(void *pvParameters){
-	 for (;;) {
-		// Perform action here.
-		char buffer[20];
-		UB_Uart_SendString(COM2, "ds3231 task", LFCR);
-		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-		time_pt = rtc_get_time();
-		sprintf(buffer, "Time is %d:%d:%d", i, time_pt->hour, time_pt->min, time_pt->sec);
-		UB_Uart_SendString(COM2, buffer, LFCR);
 
-		vTaskDelay(1000 * configTICK_RATE_HZ / 1000);
+	for (;;) {
+		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+
+		vTaskDelay(12*configTICK_RATE_HZ);
 	}
 }
 

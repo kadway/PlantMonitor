@@ -17,10 +17,9 @@
 #define DS1307_H
 
 #include <stdbool.h>
+
 #include "hal_i2c.h"
 #include "platform.h"
-
-#define DS1307_SLAVE_ADDR 0b11010000
 
 /** Time structure
  * 
@@ -52,18 +51,82 @@ struct tm {
     int twelveHour; // 12 hour clock time
 };
 
+//typedef struct ds3231_control_s{
+//	// 0x0e: control register
+//	 uint8_t  EOSCN:1; // When set to logic 0, the oscillator is started. When set to logic 1, the oscillator is stopped when the DS3231 switches to V BAT .
+//	 uint8_t  BBSQW:1; // When set to logic 1 with INTCN = 0 and V CC < V PF , this bit enables the square wave. When BBSQW is logic 0, the INT/SQW pin goes high impedance when V CC < V PF . This bit is disabled (logic 0) when power is first applied.
+//	 uint8_t  CONV:1; // Setting this bit to 1 forces the temperature sensor to convert the temperature into digital code and execute the TCXO algorithm to update the capacitance array to the oscillator.
+//	 uint8_t  RS2:1; // 0       | 0            | 1			   | 1
+//	 uint8_t  RS1:1; // 0 = 1Hz | 1 = 1.024kHz | 0 = 4.096kHz  | 1 = 8.192kHz
+//	 uint8_t  INTCN:1; // This bit controls the INT/SQW signal. When the INTCN bit is set to logic 0, a square wave is output on the INT/SQW pin. When bit is 0, the INT/SQW pin goes low when an alarm flag is set.
+//	 uint8_t  A2IE:1; // Alarm 2 Interrupt Enable
+//	 uint8_t  A1IE:1; // Alarm 1 Interrupt Enable
+//}ds3231_control ;
+//
+//typedef struct ds3231_status_s{
+// //0x0f: status
+//  uint8_t  OSF:1; // A logic 1 in this bit indicates that the oscillator either is stopped or was stopped. This bit remains at logic 1 until written to logic 0
+//  uint8_t  RES0:1;   //reserved
+//  uint8_t  RES1:1;   //reserved
+//  uint8_t  RES2:1;   //reserved
+//  uint8_t  EN32kHz:1;//Enable Square ware = 1 / Enable Interrupt = 0
+//  uint8_t  BSY:1;    //The device is busy executing TCXO functions
+//  uint8_t  A2F:1;    //alarm 2 flag
+//  uint8_t  A1F:1;    //alarm 1 flag
+//}ds3231_status;
+
+
+typedef struct ds3231_control_s{
+	// 0x0e: control register
+	uint8_t  A1IE:1; // Alarm 1 Interrupt Enable
+	uint8_t  A2IE:1; // Alarm 2 Interrupt Enable
+	uint8_t  INTCN:1; // This bit controls the INT/SQW signal. When the INTCN bit is set to logic 0, a square wave is output on the INT/SQW pin. When bit is 0, the INT/SQW pin goes low when an alarm flag is set.
+	uint8_t  RS1:1; // 0 = 1Hz | 1 = 1.024kHz | 0 = 4.096kHz  | 1 = 8.192kHz
+	uint8_t  RS2:1; // 0       | 0            | 1			   | 1
+	uint8_t  CONV:1; // Setting this bit to 1 forces the temperature sensor to convert the temperature into digital code and execute the TCXO algorithm to update the capacitance array to the oscillator.
+	uint8_t  BBSQW:1; // When set to logic 1 with INTCN = 0 and V CC < V PF , this bit enables the square wave. When BBSQW is logic 0, the INT/SQW pin goes high impedance when V CC < V PF . This bit is disabled (logic 0) when power is first applied
+	uint8_t  EOSCN:1; // When set to logic 0, the oscillator is started. When set to logic 1, the oscillator is stopped when the DS3231 switches to V BAT .
+}ds3231_control ;
+
+typedef struct ds3231_status_s{
+ //0x0f: status
+  uint8_t  A1F:1;    //alarm 1 flag
+  uint8_t  A2F:1;    //alarm 2 flag
+  uint8_t  BSY:1;    //The device is busy executing TCXO functions
+  uint8_t  EN32kHz:1;//Enable Square ware = 1 / Enable Interrupt = 0
+  uint8_t  RES2:1;   //reserved
+  uint8_t  RES1:1;   //reserved
+  uint8_t  RES0:1;   //reserved
+  uint8_t  OSF:1; // A logic 1 in this bit indicates that the oscillator either is stopped or was stopped. This bit remains at logic 1 until written to logic 0
+}ds3231_status;
+
+/*
+* DS3231 register map
+*/
+//  00h-06h: seconds, minutes, hours, day-of-week, date, month, year (all in BCD)
+//       bit 7 should be set to zero: The DS3231 clock is always running
+#define  A1M1_ADDR 0x07         // Alarm 1 seconds
+#define  A1M2_ADDR 0x08         // Alarm 1 minutes
+#define  A1M3_ADDR 0x09         // Alarm 1 hour (bit6 is am/pm flag in 12h mode)
+#define  A1M4_ADDR 0x0a         // Alarm 1 day/date (bit6: 1 for day, 0 for date)
+#define  A2M2_ADDR 0x0b         // A2M2  Alarm 2 minutes
+#define  A2M3_ADDR 0x0c         // Alarm 2 hour (bit6 is am/pm flag in 12h mode)
+#define  A2M4_ADDR 0x0d         // Alarm 2 day/data (bit6: 1 for day, 0 for date)
+#define  CONTROL_ADDR 0x0e      //Control register
+#define  STATUS_ADDR 0x0f       //Control/status register
+#define  AGING_OFFSET_ADDR 0x10 // aging offset (signed)
+#define  TEMP_MSB_ADDR 0x11     //MSB of temp (signed)
+#define  TEMP_LSB_ADDR 0x12     //LSB of temp in bits 7 and 6 (0.25 degrees for each 00, 01, 10, 11)
+
 // statically allocated 
 extern struct tm time;
 
 // Initialize the RTC and autodetect type (DS1307 or DS3231)
 void rtc_init(void);
+bool rtc_check_status(uint8_t* status);
 
-// Autodetection
-bool rtc_is_ds1307(void);
-bool rtc_is_ds3231(void);
-
-void rtc_set_ds1307(void);
-void rtc_set_ds3231(void);
+void rtc_write_byte(uint8_t* b, uint8_t offset);
+void rtc_read_byte(uint8_t* status, uint8_t offset);
 
 // Get/set time
 // Gets the time: Supports both 24-hour and 12-hour mode
@@ -75,19 +138,10 @@ void rtc_set_time(struct tm* tm_);
 // Sets the time: Supports 12-hour mode only
 void rtc_set_time_s(uint8_t hour, uint8_t min, uint8_t sec);
 
-// start/stop clock running (DS1307 only)
-void rtc_run_clock(bool run);
-bool rtc_is_clock_running(void);
-
 // Read Temperature (DS3231 only)
 void  ds3231_get_temp_int(int8_t* i, uint8_t* f);
-void rtc_force_temp_conversion(uint8_t block);
-
-// SRAM read/write DS1307 only
-void rtc_get_sram(uint8_t* data);
-void rtc_set_sram(uint8_t *data);
-uint8_t rtc_get_sram_byte(uint8_t offset);
-void rtc_set_sram_byte(uint8_t b, uint8_t offset);
+void rtc_force_temp_conversion(void);
+void readTemperatureRTC(int8_t* integer, uint8_t* fractional);
 
   // Auxillary functions
 enum RTC_SQW_FREQ { FREQ_1 = 0, FREQ_1024, FREQ_4096, FREQ_8192 };
