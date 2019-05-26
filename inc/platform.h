@@ -12,14 +12,22 @@
 #include "stm32f4xx.h"
 #include "stm32f4_discovery.h"
 #include "stm32f4xx_conf.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
+#include "semphr.h"
+
 #include "stm32_ub_uart.h"
 #include "rtc.h"
 #include "helpers.h"
 
 //#define SETTIME //define to set the hardcoded time on startup
 
+
 void initHW();
-void ADC_Config(uint16_t *ADC3ConvertedValue);
+void ADC_Config(uint16_t *ADC3ReservedMemory);
+uint16_t* getSensorValues(void);
 void I2C_Config(void);
 void Config_Wakeup_INT(void);
 /*

@@ -13,7 +13,7 @@ struct tm time;
 
 
 EXTI_InitTypeDef   EXTI_InitStructure;
-
+uint16_t ADC3ConvertedValue[5] = {0,0,0,0,0};
 
 void initHW()
 {
@@ -43,23 +43,23 @@ void initHW()
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_Init(GPIOE, &GPIO_InitStructure);
 
-	// Init PushButton
-//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-//	GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_IN;
-//	GPIO_InitStructure2.GPIO_Pin =  GPIO_Pin_0;
-//	GPIO_InitStructure2.GPIO_PuPd = GPIO_PuPd_NOPULL;
-//	GPIO_InitStructure2.GPIO_Speed = GPIO_Speed_100MHz;
-//	GPIO_InitStructure2.GPIO_OType = GPIO_OType_PP;
-//	GPIO_Init(GPIOA, &GPIO_InitStructure2);
 
-	//Configure and start I2c
-	I2C_Config();
+	ADC_Config(ADC3ConvertedValue);// ADC config
+
+
+	I2C_Config();//Configure and start I2c
 
 	//init the ds3231 rtc
 	rtc_init();
 
 	//Config_Wakeup interrupt
 	Config_Wakeup_INT();
+}
+
+
+uint16_t* getSensorValues(void){
+	//return pointer for memory where ADC conversion values are stored by DMA
+	return ADC3ConvertedValue;
 }
 
 void I2C_Config(void){
@@ -104,7 +104,7 @@ void I2C_Config(void){
 }
 
 
-void ADC_Config(uint16_t *ADC3ConvertedValue)
+void ADC_Config(uint16_t *ADC3ReservedMemory)
 {
 
 	ADC_InitTypeDef       ADC_InitStruct;
@@ -122,7 +122,7 @@ void ADC_Config(uint16_t *ADC3ConvertedValue)
 	/* DMA2 Stream0 channel0 configuration **************************************/
 	DMA_InitStruct.DMA_Channel = DMA_Channel_2;
 	DMA_InitStruct.DMA_PeripheralBaseAddr = (uint32_t)&ADC3->DR;//ADC3's data register
-	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)ADC3ConvertedValue;
+	DMA_InitStruct.DMA_Memory0BaseAddr = (uint32_t)ADC3ReservedMemory;
 	DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralToMemory;
 	DMA_InitStruct.DMA_BufferSize = 4;
 	DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
