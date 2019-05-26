@@ -87,6 +87,7 @@
 #include "stm32f4xx_i2c.h"
 #include "stm32f4xx_rcc.h"
 
+#include "platform.h"
 /** @addtogroup STM32F4xx_StdPeriph_Driver
   * @{
   */
@@ -391,13 +392,18 @@ void I2C_Send7bitAddress(I2C_TypeDef* I2Cx, uint8_t Address, uint8_t I2C_Directi
   {
     /* Set the address bit0 for read */
     Address |= I2C_OAR1_ADD0;
+	//  Address = 0xD1;
   }
   else
   {
     /* Reset the address bit0 for write */
+	  //Address = 0xD0;
     Address &= (uint8_t)~((uint8_t)I2C_OAR1_ADD0);
   }
   /* Send the address */
+  //char buf[20];
+  //sprintf(buf, "Address to write %#04x", Address);
+ // UB_Uart_SendString(COM2, buf, LFCR);
   I2Cx->DR = Address;
 }
 

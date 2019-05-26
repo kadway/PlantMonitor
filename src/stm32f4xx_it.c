@@ -142,6 +142,57 @@ void DebugMon_Handler(void)
 }*/
 
 /**
+  * @brief  This function handles External line 0 interrupt request.
+  * @param  None
+  * @retval None
+  */
+void EXTI0_IRQHandler(void)
+{ char buf_time[45];
+  struct tm *time_temp=NULL;
+  if(EXTI_GetITStatus(EXTI_Line0) != RESET)
+  {
+    /* Toggle LED */
+	  GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+	  time_temp = rtc_get_time();
+	  sprintf(buf_time, "Alarm fired: %d:%d:%d", time_temp->hour, time_temp->min, time_temp->sec);
+	  UB_Uart_SendString(COM2, buf_time, LFCR);
+
+    /* Clear the EXTI line 0 pending bit */
+    EXTI_ClearITPendingBit(EXTI_Line0);
+  }
+}
+
+/**
+  * @brief  This function handles DMA2_Stream0 interrupt request.
+  * @param  None
+  * @retval None
+  */
+extern bool dataReady;
+
+void DMA2_Stream0_IRQHandler(void) {
+
+	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)) {
+
+		//temporary solution for signaling that data is ready
+		dataReady = 1;
+
+		//resume the task that prints out the data
+		// NOT WORKING
+		/*BaseType_t xYieldRequired;
+		xYieldRequired = pdFALSE;
+		xYieldRequired = xTaskResumeFromISR(sensorTaskHndl);
+		portYIELD_FROM_ISR(xYieldRequired);*/
+		/*BaseType_t xHigherPriorityTaskWoken;
+		xHigherPriorityTaskWoken = pdFALSE;
+		vTaskNotifyGiveFromISR( sensorTaskHndl, &xHigherPriorityTaskWoken );
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );*/
+	}
+
+	DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);		//clear all the interrupts
+	DMA_ClearFlag(DMA2_Stream0, DMA_FLAG_TCIF0);  		//make sure flags are clear
+}
+
+/**
   * @}
   */ 
 

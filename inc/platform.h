@@ -7,14 +7,21 @@
 
 #ifndef INC_PLATFORM_H_
 #define INC_PLATFORM_H_
-
+#include <stdio.h>
+#include <stdlib.h>
+#include "stm32f4xx.h"
+#include "stm32f4_discovery.h"
 #include "stm32f4xx_conf.h"
 #include "stm32_ub_uart.h"
+#include "rtc.h"
+#include "helpers.h"
+
+//#define SETTIME //define to set the hardcoded time on startup
 
 void initHW();
 void ADC_Config(uint16_t *ADC3ConvertedValue);
-
-
+void I2C_Config(void);
+void Config_Wakeup_INT(void);
 /*
  * ADC Pins Available
  *
@@ -37,6 +44,8 @@ void ADC_Config(uint16_t *ADC3ConvertedValue);
  *
  */
 
+//external wakeup interrupt
+// PE7 - falling edge
 
 /*
  * USART used available
@@ -77,6 +86,5 @@ void ADC_Config(uint16_t *ADC3ConvertedValue);
  * PB 8,9
  *
  */
-
 
 #endif /* INC_PLATFORM_H_ */
