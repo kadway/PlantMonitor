@@ -21,7 +21,7 @@
 void initHW();
 void ADC_Config(uint16_t *ADC3ConvertedValue);
 void I2C_Config(void);
-
+void Config_Wakeup_INT(void);
 /*
  * ADC Pins Available
  *
@@ -44,6 +44,8 @@ void I2C_Config(void);
  *
  */
 
+//external wakeup interrupt
+// PE7 - falling edge
 
 /*
  * USART used available

@@ -47,7 +47,7 @@ SemaphoreHandle_t xSemaphore = NULL;
 
 uint16_t i = 0;
 uint16_t counter = 0;
-int8_t dataReady = 0;
+bool dataReady = 0;
 
 //Timer Handler
 static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
@@ -63,39 +63,44 @@ static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
 	counter++;
 	UB_Uart_SendString(COM2,sCounter,LFCR);
 
-	//get current time
-	time_pt = rtc_get_time();
-
-	sprintf(buf_time, "Hora %d:%d:%d dia %d do mes %d do ano %d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon, time_pt->year);
-	UB_Uart_SendString(COM2, buf_time, LFCR);
-
-
-	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
-
 	if(~status.BSY){
-	//get current temperature
+		//get current time
+		time_pt = rtc_get_time();
+		sprintf(buf_time, "Hora %d:%d:%d dia %d do mes %d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
+		UB_Uart_SendString(COM2, buf_time, LFCR);
+
+		//rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
+
+		//get current temperature
 		readTemperatureRTC(&integer, &fractional);
 		sprintf(buf_temp, "Temperatura: %d.%d ºC", integer, fractional);
 		UB_Uart_SendString(COM2, buf_temp, LFCR);
+
+		//rtc_reset_alarm();
+		time_pt->sec = time_pt->sec + 4;
+		Delay(0x3FFF);
+		rtc_set_alarm(time_pt);
+		//rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec);
+		//UB_Uart_SendString(COM2, "Check alarm", LFCR);
+		Delay(0x3FFF);
+		time_pt = rtc_get_alarm();
+		sprintf(buf_alarm, "Alarme set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+		UB_Uart_SendString(COM2, buf_alarm, LFCR);
+	    /* Enter Stop Mode */
+		Delay(0x3FFF);
+	    PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+	    //reconfigure clock system
+	    SystemInit();
 	}
 	else
 	{
 		UB_Uart_SendString(COM2, "Device busy", LFCR);
 	}
 
-	//rtc_reset_alarm();
-	time_pt->sec = time_pt->sec + 5;
-	rtc_set_alarm(time_pt);
-	//rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec);
-	//UB_Uart_SendString(COM2, "Check alarm", LFCR);
-	time_pt = rtc_get_alarm();
-	sprintf(buf_alarm, "Alarme set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
-	UB_Uart_SendString(COM2, buf_alarm, LFCR);
-
 	if( xSemaphore != NULL ){
-			if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
-				ADC_SoftwareStartConv(ADC3);
-				xSemaphoreGive( xSemaphore );
+		if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
+			ADC_SoftwareStartConv(ADC3);
+			xSemaphoreGive( xSemaphore );
 			}
 		 }
 }
@@ -120,7 +125,7 @@ int main(void){
 	}
 
 	timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
-			pdMS_TO_TICKS(10000), 			   /* period/time */
+			pdMS_TO_TICKS(5000), 			   /* period/time */
 			pdTRUE, 						   /* auto reload */
 			(void*)0, 					       /* timer ID */
 			vTimerCallback1SecExpired); 	   /* callback */
@@ -205,7 +210,7 @@ void GetSensorValues(void *pvParameters){
 				xSemaphoreGive( xSemaphore );
 			}
 		}
-		vTaskDelay(13 * configTICK_RATE_HZ );
+		vTaskDelay(3 * configTICK_RATE_HZ );
 	}
 }
 
@@ -215,9 +220,9 @@ void GetSensorValues(void *pvParameters){
 void ToggleLED_Timer(void *pvParameters){
 
 	for (;;) {
-		GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
 
-		vTaskDelay(12*configTICK_RATE_HZ);
+		vTaskDelay(3*configTICK_RATE_HZ);
 	}
 }
 
@@ -265,28 +270,6 @@ void ToggleLED_IPC(void *pvParameters) {
 }
 
 
-void DMA2_Stream0_IRQHandler(void) {
-
-	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)) {
-
-		//temporary solution for signaling that data is ready
-		dataReady = 1;
-
-		//resume the task that prints out the data
-		// NOT WORKING
-		/*BaseType_t xYieldRequired;
-		xYieldRequired = pdFALSE;
-		xYieldRequired = xTaskResumeFromISR(sensorTaskHndl);
-		portYIELD_FROM_ISR(xYieldRequired);*/
-		/*BaseType_t xHigherPriorityTaskWoken;
-		xHigherPriorityTaskWoken = pdFALSE;
-		vTaskNotifyGiveFromISR( sensorTaskHndl, &xHigherPriorityTaskWoken );
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );*/
-	}
-
-	DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);		//clear all the interrupts
-	DMA_ClearFlag(DMA2_Stream0, DMA_FLAG_TCIF0);  		//make sure flags are clear
-}
 
 
 

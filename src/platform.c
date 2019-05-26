@@ -11,6 +11,10 @@
 struct tm time;
 #endif
 
+
+EXTI_InitTypeDef   EXTI_InitStructure;
+
+
 void initHW()
 {
 
@@ -22,7 +26,6 @@ void initHW()
 
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure2;
-
 	// Init LED
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -41,19 +44,22 @@ void initHW()
 	GPIO_Init(GPIOE, &GPIO_InitStructure);
 
 	// Init PushButton
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
-	GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure2.GPIO_Pin =  GPIO_Pin_0;
-	GPIO_InitStructure2.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure2.GPIO_Speed = GPIO_Speed_100MHz;
-	GPIO_InitStructure2.GPIO_OType = GPIO_OType_PP;
-	GPIO_Init(GPIOA, &GPIO_InitStructure2);
+//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+//	GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_IN;
+//	GPIO_InitStructure2.GPIO_Pin =  GPIO_Pin_0;
+//	GPIO_InitStructure2.GPIO_PuPd = GPIO_PuPd_NOPULL;
+//	GPIO_InitStructure2.GPIO_Speed = GPIO_Speed_100MHz;
+//	GPIO_InitStructure2.GPIO_OType = GPIO_OType_PP;
+//	GPIO_Init(GPIOA, &GPIO_InitStructure2);
 
 	//Configure and start I2c
 	I2C_Config();
 
 	//init the ds3231 rtc
 	rtc_init();
+
+	//Config_Wakeup interrupt
+	Config_Wakeup_INT();
 }
 
 void I2C_Config(void){
@@ -85,7 +91,7 @@ void I2C_Config(void){
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 
-	I2C_InitStruct.I2C_ClockSpeed = 100000; // 100kHz
+	I2C_InitStruct.I2C_ClockSpeed = 400000; // 100kHz
 	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;   // I2C mode
 	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;   // 50% duty cycle --> standard
 	I2C_InitStruct.I2C_OwnAddress1 = 0x0;   // own address, not relevant in master mode
@@ -186,4 +192,38 @@ void ADC_Config(uint16_t *ADC3ConvertedValue)
 
 	//ADC_SoftwareStartConv(ADC3);
 
+}
+
+void Config_Wakeup_INT(void)
+{
+	GPIO_InitTypeDef   GPIO_InitStructure;
+	NVIC_InitTypeDef   NVIC_InitStructure;
+
+	/* Enable GPIOA clock */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+	/* Enable SYSCFG clock */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+
+	/* Configure PA0 pin as input floating */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Connect EXTI Line0 to PA0 pin */
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource0);
+
+	/* Configure EXTI Line0 */
+	EXTI_InitStructure.EXTI_Line = EXTI_Line0;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
+
+	/* Enable and set EXTI Line0 Interrupt to the lowest priority */
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x01;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x01;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
 }

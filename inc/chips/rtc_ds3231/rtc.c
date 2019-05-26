@@ -85,7 +85,7 @@ void rtc_read_byte(uint8_t* status, uint8_t offset)
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, offset);
 	I2C_stop(I2C1);
-
+	Delay(0x3FFF);
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Receiver); // start a transmission in Master receiver mode
 	*status = I2C_read_nack(I2C1); // read one byte and don't request another byte, stop transmission
 }
@@ -97,7 +97,7 @@ void rtc_write_byte(uint8_t* b, uint8_t offset)
 //	UB_Uart_SendString(COM2, buf, LFCR);
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, offset);
-	Delay(0xFFFF);
+	Delay(0x3FFF);
 	I2C_write(I2C1, *b);
 	I2C_stop(I2C1);
 }
@@ -132,14 +132,32 @@ void rtc_init(void)
 		status.OSF=0;
 
 		rtc_write_byte((uint8_t*)&control, CONTROL_ADDR);
+		Delay(0x3FFF);
 		rtc_write_byte((uint8_t*)&status, STATUS_ADDR);
-
+		Delay(0x3FFF);
 		//status 0x00 is good (Oscillator is running, device not busy and no alarm flag is set)
 	}while(rtc_check_status((uint8_t*) &status));
+	Delay(0x3FFF);
+
+	control.INTCN=1;
+	rtc_write_byte((uint8_t*)&control, CONTROL_ADDR);
+	Delay(0x3FFF);
 
 	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
 	sprintf(buf, "Status: %#04x", status);
 	UB_Uart_SendString(COM2, buf, LFCR);
+//
+//	control.INTCN=1;
+//	control.A1IE=0;
+//	control.A2IE=0;
+//	control.BBSQW=0;
+//	control.EOSCN=0;
+//
+//	rtc_write_byte((uint8_t*)&control, CONTROL_ADDR);
+//
+//	rtc_read_byte((uint8_t*) &control, CONTROL_ADDR);
+//	sprintf(buf, "Control: %#04x", status);
+//	UB_Uart_SendString(COM2, buf, LFCR);
 
 #ifdef SETTIME
 	time.sec=0;
@@ -166,7 +184,7 @@ struct tm* rtc_get_time(void)
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Transmitter); // start a transmission in Master transmitter mode
 	I2C_write(I2C1, 0x0);
 	I2C_stop(I2C1);
-
+	Delay(0x3FFF);
 	I2C_start(I2C1, RTC_ADDR, I2C_Direction_Receiver); // start a transmission in Master receiver mode
 
 	for (uint8_t i = 0; i < 6; i++) {
@@ -414,10 +432,10 @@ void rtc_get_alarm_s(uint8_t* hour, uint8_t* min, uint8_t* sec)
 {
 	rtc_read_byte(sec, A1M1_ADDR);
 	*sec  = bcd2dec(*sec & ~0b10000000);
-
+	Delay(0x0FFF);
 	rtc_read_byte(min, A1M2_ADDR);
 	*min  = bcd2dec(*min & ~0b10000000);
-
+	Delay(0x0FFF);
 	rtc_read_byte(hour, A1M3_ADDR);
 	*hour = bcd2dec(*hour & ~0b10000000);
 }
