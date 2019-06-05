@@ -9,6 +9,8 @@
 
 /*Task handles*/
 TaskHandle_t sensorTaskHndl = NULL;
+TaskHandle_t waterTaskHndl = NULL;
+TaskHandle_t sleepTaskHndl = NULL;
 
 xQueueHandle pbq;
 
@@ -21,6 +23,7 @@ uint16_t i = 0;
 SemaphoreHandle_t xSemaphore = NULL;
 
 bool dataReady = 0;
+bool alarm_not_fired = 1;
 
 void createTasks(void);
 void PoolSensors(void *pvParameters);
@@ -31,10 +34,10 @@ void DetectButtonPress(void *pvParameters);
 
 xTimerHandle timerHndl1Sec;
 uint16_t counter = 0;
-char sCounter[24];
+
 
 // statically allocated
-struct tm *time_pt=NULL;
+
 extern struct tm time;
 
 static void vTimerCallback1SecExpired(xTimerHandle pxTimer);

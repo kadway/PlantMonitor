@@ -30,6 +30,9 @@ void ADC_Config(uint16_t *ADC3ReservedMemory);
 uint16_t* getSensorValues(void);
 void I2C_Config(void);
 void Config_Wakeup_INT(void);
+void PrepareSleepMode(void);
+void PrepareRunMode(void);
+
 /*
  * ADC Pins Available
  *

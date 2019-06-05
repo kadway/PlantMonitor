@@ -379,6 +379,8 @@ void rtc_reset_alarm(void)
 
 void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec)
 {
+	char buffer[25];
+
 	if (hour > 23) return;
 	if (min > 59) return;
 	if (sec > 59) return;
@@ -403,22 +405,43 @@ void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec)
 	Delay(0x0FFF);
 	ds3231_status status;
 	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
-	status.A1F = 0;// clear alarm 1 flag
-	status.A2F = 0;// clear alarm 2 flag
-	status.OSF = 0;// clear any OSC fault just in case
-	status.EN32kHz = 0;// disable square wave if not done before
-	//UB_Uart_SendString(COM2, "clear alarm", LFCR);
-	Delay(0x0FFF);
-	rtc_write_byte((uint8_t*) &status, STATUS_ADDR);
+
+	if(status.A1F != 0 | status.EN32kHz != 0){
+		sprintf(buffer, "Status: %#04x", status);
+		UB_Uart_SendString(COM2, buffer, LFCR);
+		//sprintf(buffer, "Status :: A1F:%d A2F:%d OSF:%d EN32KHz:%d BSY:%d", status.A1F, status.A2F, status.OSF, status.EN32kHz, status.BSY);
+		//UB_Uart_SendString(COM2, buffer, LFCR);
+
+		status.A1F = 0;// clear alarm 1 flag
+		status.A2F = 0;// clear alarm 2 flag
+		status.OSF = 0;// clear any OSC fault just in case
+		status.EN32kHz = 0;// disable square wave if not done before
+
+		Delay(0x0FFF);
+		rtc_write_byte((uint8_t*) &status, STATUS_ADDR);
+		Delay(0x0FFF);
+	}
 	Delay(0x0FFF);
 	ds3231_control control;
 	rtc_read_byte((uint8_t*) &control, CONTROL_ADDR);
-	control.INTCN=1;//enable the INTERRUPT
-	control.A1IE=1; //enable alarm1
-	control.A2IE=0; //disable alarm2
-	//UB_Uart_SendString(COM2, "enable interrupt", LFCR);
-	Delay(0x0FFF);
-	rtc_write_byte((uint8_t*) &control, CONTROL_ADDR);
+	if(control.INTCN != 1 | control.A1IE != 1){
+		sprintf(buffer, "control: %#04x", control);
+		UB_Uart_SendString(COM2, buffer, LFCR);
+		//sprintf(buffer, "Control :: A1IE:%d A2IE:%d BBSQW:%d EOSCN:%d INTCN:%d", control.A1IE, control.A2IE, control.BBSQW, control.EOSCN, control.INTCN);
+		//UB_Uart_SendString(COM2, buffer, LFCR);
+
+		control.INTCN=1;//enable the INTERRUPT
+		control.A1IE=1; //enable alarm1
+		control.A2IE=0; //disable alarm2
+		//UB_Uart_SendString(COM2, "enable interrupt", LFCR);
+		Delay(0x3FFF);
+		rtc_write_byte((uint8_t*) &control, CONTROL_ADDR);
+		Delay(0x3FFF);
+		rtc_read_byte((uint8_t*) &control, CONTROL_ADDR);
+		sprintf(buffer, "new control: %#04x", control);
+		UB_Uart_SendString(COM2, buffer, LFCR);
+	}
+	UB_Uart_SendString(COM2, "alarm set", LFCR);
 }
 
 

@@ -54,6 +54,7 @@ void initHW()
 
 	//Config_Wakeup interrupt
 	Config_Wakeup_INT();
+
 }
 
 
@@ -206,7 +207,7 @@ void Config_Wakeup_INT(void)
 
 	/* Configure PA0 pin as input floating */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -226,4 +227,41 @@ void Config_Wakeup_INT(void)
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x01;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
+
+}
+
+void PrepareSleepMode(void){
+	//disable other non relevant interrupts and clocks
+
+	/* Disable ADC3, DMA2 and GPIO clocks ****************************************/
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, DISABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC3, DISABLE);//ADC3 is connected to the APB2 peripheral bus
+
+	//disable I2C
+	//RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, DISABLE);
+	//I2C_Cmd(I2C1, DISABLE);
+
+	DMA_ITConfig(DMA2_Stream0, DMA_IT_TC, DISABLE);
+	DMA_Cmd(DMA2_Stream0, DISABLE);
+
+	/* DISABLE ADC3 DMA */
+	ADC_DMACmd(ADC3, DISABLE);
+	/* DISABLE ADC3 */
+	ADC_Cmd(ADC3, DISABLE);
+
+	//Disable USART
+	USART_Cmd(USART2, DISABLE);
+    USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, DISABLE);
+
+    //Disable GPIO clocks
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, DISABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, DISABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, DISABLE);
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOE, DISABLE);
+}
+
+void PrepareRunMode(void){
+		//initialize HW after sleep mode
+		initHW();
 }

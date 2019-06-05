@@ -33,12 +33,17 @@ void I2C_start(I2C_TypeDef* I2Cx, uint8_t address, uint8_t direction)
 	 * direction
 	 */
 	if(direction == I2C_Direction_Transmitter)
-	{//UB_Uart_SendString(COM2, "I2C wait on transmitter mode", LFCR);
-		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+	{
+		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)){
+			UB_Uart_SendString(COM2, "I2C wait on transmitter mode", LFCR);
+		}
 	}
 	else if(direction == I2C_Direction_Receiver)
-	{//UB_Uart_SendString(COM2, "I2C wait on receiver mode", LFCR);
-		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+	{
+		while(!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)){
+			UB_Uart_SendString(COM2, "I2C wait on receiver mode", LFCR);
+
+		}
 	}
 
 }

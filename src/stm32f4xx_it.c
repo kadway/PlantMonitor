@@ -23,7 +23,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
-
+//#include "appTasks.h"
 /** @addtogroup STM32F4_Discovery_Peripheral_Examples
   * @{
   */
@@ -50,6 +50,7 @@
   */
 void NMI_Handler(void)
 {
+	UB_Uart_SendString(COM2, "interrupt NMI", LFCR);
 }
 
 /**
@@ -116,7 +117,9 @@ void UsageFault_Handler(void)
   * @retval None
   */
 void DebugMon_Handler(void)
+
 {
+	UB_Uart_SendString(COM2, "interrupt debug", LFCR);
 }
 
 /**
@@ -146,17 +149,18 @@ void DebugMon_Handler(void)
   * @param  None
   * @retval None
   */
+extern TaskHandle_t sensorTaskHndl;
+extern bool alarm_not_fired;
 void EXTI0_IRQHandler(void)
-{ char buf_time[45];
-  struct tm *time_temp=NULL;
-  if(EXTI_GetITStatus(EXTI_Line0) != RESET)
-  {
-    /* Toggle LED */
-	  GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-	  time_temp = rtc_get_time();
-	  sprintf(buf_time, "Alarm fired: %d:%d:%d", time_temp->hour, time_temp->min, time_temp->sec);
-	  UB_Uart_SendString(COM2, buf_time, LFCR);
+{
 
+  if(EXTI_GetITStatus(EXTI_Line0) != RESET)
+  {     char buf_time[45];
+		struct tm *time_pt=NULL;
+		time_pt = rtc_get_time();
+		sprintf(buf_time, "Alarm fired: %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+		UB_Uart_SendString(COM2, buf_time, LFCR);
+		alarm_not_fired=0;
     /* Clear the EXTI line 0 pending bit */
     EXTI_ClearITPendingBit(EXTI_Line0);
   }
@@ -175,7 +179,7 @@ void DMA2_Stream0_IRQHandler(void) {
 
 		//temporary solution for signaling that data is ready
 		dataReady = 1;
-
+		//UB_Uart_SendString(COM2, "interrupt dma", LFCR);
 		//resume the task that prints out the data
 		// NOT WORKING
 		/*BaseType_t xYieldRequired;
