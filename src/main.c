@@ -22,20 +22,21 @@
 
 void createTasks(void);
 
+
 int main(void){
 
 	initHW();
 	//debug
-	UB_Uart_SendString(COM2,"HW initialized",LFCR);
+	//UB_Uart_SendString(COM2,"HW initialized",LFCR);
 
 	//create the necessary tasks
 	createTasks();
 	/* Start the RTOS Scheduler */
 	vTaskStartScheduler();
 
-	/* HALT */
-	while(1);
 
+	  /* HALT */
+	  while(1);
 }
 
 

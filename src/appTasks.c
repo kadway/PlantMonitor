@@ -77,10 +77,10 @@ void PoolSensors(void *pvParameters){
 
 
 	for (;;) {
-		UB_Uart_SendString(COM2,"PoolSensors",LFCR);
+		//UB_Uart_SendString(COM2,"PoolSensors",LFCR);
 
 		if(!dataReady){
-			UB_Uart_SendString(COM2,"Start ADC conversion",LFCR);
+			//UB_Uart_SendString(COM2,"Start ADC conversion",LFCR);
 			ADC_SoftwareStartConv(ADC3);
 		}
 		//UB_Uart_SendString(COM2,"sensorTask suspended",LFCR);
@@ -90,14 +90,14 @@ void PoolSensors(void *pvParameters){
 		if(dataReady){
 			//if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
 				dataReady = 0;
-				UB_Uart_SendString(COM2, "Adc ready", LFCR);
+				//UB_Uart_SendString(COM2, "Adc ready", LFCR);
 				//xSemaphoreGive( xSemaphore );
 				vTaskResume(waterTaskHndl);
 				vTaskSuspend(NULL);
 			//}
 		}
 		//delay wait for ADC conversion finished
-		vTaskDelay(3 * configTICK_RATE_HZ );
+		vTaskDelay(2 * configTICK_RATE_HZ );
 	}
 }
 
@@ -118,15 +118,18 @@ void WaterPlants(void *pvParameters){
 	for (;;) {
 		//suspend itself wait for pooling sensor task to resume it
 		vTaskSuspend(NULL);
-		UB_Uart_SendString(COM2,"WaterPlants",LFCR);
+		//UB_Uart_SendString(COM2,"WaterPlants",LFCR);
+		readTemperatureRTC(&integer, &fractional);
+		sprintf(buf_temp, "Temp: %d.%d ºC", integer, fractional);
+		UB_Uart_SendString(COM2, buf_temp, LFCR);
 
 		for(i=0; i<4; i++){
 			ADC_pointer[i] = (uint16_t) (( (uint32_t)ADC_pointer[i] * 3000) / 4096);
 		}
-		for(i=0; i<4; i++){
-			sprintf(sAdcValue, "Channel %d, value: %d mV", i, ADC_pointer[i]);
-			UB_Uart_SendString(COM2, sAdcValue, LFCR);
-		}
+		//for(i=0; i<4; i++){
+		//	sprintf(sAdcValue, "Channel %d, value: %d mV", i, ADC_pointer[i]);
+		//	UB_Uart_SendString(COM2, sAdcValue, LFCR);
+		//}
 
 		timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
 				pdMS_TO_TICKS(1000), 			   /* period/time */
@@ -142,17 +145,10 @@ void WaterPlants(void *pvParameters){
 			for(;;); /* failure!?! */
 			UB_Uart_SendString(COM2,"Failure",LFCR);
 		}
-		UB_Uart_SendString(COM2,"Wait for timer",LFCR);
-		//suspend waiting for timer
+
+		//UB_Uart_SendString(COM2,"Watering... Wait for timer",LFCR);
+		//suspend itself timer should take over
 		vTaskSuspend(NULL);
-
-		readTemperatureRTC(&integer, &fractional);
-		sprintf(buf_temp, "Temp: %d.%d ºC", integer, fractional);
-		UB_Uart_SendString(COM2, buf_temp, LFCR);
-
-		//resume sleeping mode
-		vTaskResume(sleepTaskHndl);
-
 	}
 }
 
@@ -182,54 +178,52 @@ void SendDataOut_IPC(void *pvParameters) {
  * 			And Signal Event via Inter-Process Communication (IPC)
  */
 void SleepAlarm(void *pvParameters){
-	char buf_alarm[25];
 	char buf_time[45];
 	struct tm *time_pt=NULL;
 
 	while (1) {
 		//suspend itself
 		vTaskSuspend(NULL);
-
-		UB_Uart_SendString(COM2,"Sleep alarm task",LFCR);
-
 		//get current time
-
 		time_pt = rtc_get_time();
-		sprintf(buf_time, "Time %d:%d:%d day %d do month %d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
+		sprintf(buf_time, "Going to sleep at %d:%d:%d - %d/%d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
 		UB_Uart_SendString(COM2, buf_time, LFCR);
+		Delay(0xFFFF);
+		PrepareSleepMode();
+		StartSleep();
 
-		time_pt->min = time_pt->min + 1;
-
-		Delay(0x3FFF);
-		rtc_set_alarm(time_pt);
-		Delay(0x3FFF);
-		time_pt = rtc_get_alarm();
-		sprintf(buf_alarm, "Alarm set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
-		UB_Uart_SendString(COM2, buf_alarm, LFCR);
-		Delay(0x3FFF);
-
-		//disable not needed clocks and interrupts
-		//PrepareSleepMode();
-
-		/* Enter Stop Mode */
-		//PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
-
-		//reconfigure system
-		//PrepareRunMode();
-		while(alarm_not_fired){
-			UB_Uart_SendString(COM2, "wait alarm", LFCR);
-			//PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
-			vTaskDelay(5*configTICK_RATE_HZ);
-
-		}
-		/* Toggle LED */
-		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
-		//time_pt = rtc_get_time();
-		//sprintf(buf_time, "Alarm fired: %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
-		//UB_Uart_SendString(COM2, buf_time, LFCR);
-		UB_Uart_SendString(COM2, "resume Sensor pooling", LFCR);
-		//resume pool sensor task
-		vTaskResume(sensorTaskHndl);
+//		time_pt->min = time_pt->min + 1;
+//
+//		Delay(0x3FFF);
+//		rtc_set_alarm(time_pt);
+//		Delay(0x3FFF);
+//		time_pt = rtc_get_alarm();
+//		sprintf(buf_alarm, "Alarm set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+//		UB_Uart_SendString(COM2, buf_alarm, LFCR);
+//		Delay(0x3FFF);
+//
+//		//disable not needed clocks and interrupts
+//		//PrepareSleepMode();
+//
+//		/* Enter Stop Mode */
+//		//PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//
+//		//reconfigure system
+//		//PrepareRunMode();
+//		while(alarm_not_fired){
+//			UB_Uart_SendString(COM2, "wait alarm", LFCR);
+//			//PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFE);
+//			vTaskDelay(5*configTICK_RATE_HZ);
+//
+//		}
+//		/* Toggle LED */
+//		//GPIO_ToggleBits(GPIOD, GPIO_Pin_12);
+//		//time_pt = rtc_get_time();
+//		//sprintf(buf_time, "Alarm fired: %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+//		//UB_Uart_SendString(COM2, buf_time, LFCR);
+//		UB_Uart_SendString(COM2, "resume Sensor pooling", LFCR);
+//		//resume pool sensor task
+//		vTaskResume(sensorTaskHndl);
 	}
 }
 
@@ -262,11 +256,11 @@ void DetectButtonPress(void *pvParameters){
 //Timer functions
 
 static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
-	char sCounter[24];
+	char sCounter[50];
 
-	sprintf(sCounter, "Timer %d expired", counter);
+	//sprintf(sCounter, "Timer %d expired. Resume sleep task.", counter);
 	counter++;
-	UB_Uart_SendString(COM2,sCounter,LFCR);
+	//UB_Uart_SendString(COM2,sCounter,LFCR);
 	vTaskResume(sleepTaskHndl);
 }
 

@@ -1541,6 +1541,7 @@ ErrorStatus RTC_WakeUpCmd(FunctionalState NewState)
   {
     /* Enable the Wakeup Timer */
     RTC->CR |= (uint32_t)RTC_CR_WUTE;
+    RTC->CR |= (uint32_t)RTC_CR_WUTIE;
     status = SUCCESS;    
   }
   else

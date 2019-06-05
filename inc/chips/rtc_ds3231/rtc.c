@@ -112,13 +112,16 @@ bool rtc_check_status(uint8_t* status){
 	}
 }
 
-void rtc_init(void)
-{
+void rtc_init(void){
 	//bit fields for control and status registers
 	ds3231_control control;
 	ds3231_status status;
+	char buf_time[45];
+	struct tm *time_pt=NULL;
 
-	//UB_Uart_SendString(COM2, "RTC INIT.", LFCR);
+	//enable supply for RTC
+	GPIO_SetBits(GPIOD, GPIO_Pin_12);
+	Delay(0x3FFF);
 	do{
 		control.INTCN=0;
 		control.A1IE=0;
@@ -144,8 +147,8 @@ void rtc_init(void)
 	Delay(0x3FFF);
 
 	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
-	sprintf(buf, "Status: %#04x", status);
-	UB_Uart_SendString(COM2, buf, LFCR);
+	//sprintf(buf, "Status: %#04x", status);
+	//UB_Uart_SendString(COM2, buf, LFCR);
 //
 //	control.INTCN=1;
 //	control.A1IE=0;
@@ -160,16 +163,19 @@ void rtc_init(void)
 //	UB_Uart_SendString(COM2, buf, LFCR);
 
 #ifdef SETTIME
-	time.sec=0;
-	time.min=11;
-	time.hour=12;
-	time.mday=25;
-	time.mon=5;
+	time.sec=30;
+	time.min=31;
+	time.hour=20;
+	time.mday=9;
+	time.mon=6;
 	time.year=19;
-	time.wday=2;
+	time.wday=1;
 	rtc_set_time(&time);
 #endif
 
+	time_pt = rtc_get_time();
+	sprintf(buf_time, "Wakeup at %d:%d:%d - %d/%d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
+	UB_Uart_SendString(COM2, buf_time, LFCR);
 }
 
 
