@@ -22,6 +22,7 @@
 
 void createTasks(void);
 
+
 int main(void){
 
 	initHW();
@@ -32,10 +33,11 @@ int main(void){
 	createTasks();
 	/* Start the RTOS Scheduler */
 	vTaskStartScheduler();
+	  /* Enable WKUP pin  */
+	  //PWR_WakeUpPinCmd(ENABLE);
 
-	/* HALT */
-	while(1);
-
+	  /* HALT */
+	  while(1);
 }
 
 

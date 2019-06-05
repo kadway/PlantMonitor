@@ -36,6 +36,8 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+
+
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -128,6 +130,12 @@ void DebugMon_Handler(void)
   * @retval None
   */
 
+//void SysTick_Handler(void)
+//{
+//  /* Toggle LED4 */
+//  STM_EVAL_LEDToggle(LED4);
+//}
+
 /******************************************************************************/
 /*                 STM32F4xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */
@@ -151,6 +159,7 @@ void DebugMon_Handler(void)
   */
 extern TaskHandle_t sensorTaskHndl;
 extern bool alarm_not_fired;
+
 void EXTI0_IRQHandler(void)
 {
 
@@ -165,6 +174,43 @@ void EXTI0_IRQHandler(void)
     EXTI_ClearITPendingBit(EXTI_Line0);
   }
 }
+//
+//void EXTI1_IRQHandler(void)
+//{
+//  if(EXTI_GetITStatus(EXTI_Line1) != RESET)
+//  {
+//    /* Clear the SEL Button EXTI line pending bit */
+//    EXTI_ClearITPendingBit(EXTI_Line1);
+//
+//    /* Disable the Alarm A */
+//    RTC_AlarmCmd(RTC_Alarm_A, DISABLE);
+//
+//    RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
+//
+//    /* Set the alarm to current time + 5s */
+//    RTC_AlarmStructure.RTC_AlarmTime.RTC_H12     = RTC_TimeStructure.RTC_H12;
+//    RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours   = RTC_TimeStructure.RTC_Hours;
+//    RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = RTC_TimeStructure.RTC_Minutes;
+//    RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = (RTC_TimeStructure.RTC_Seconds + 0x5) % 60;
+//    RTC_AlarmStructure.RTC_AlarmDateWeekDay = 0x31;
+//    RTC_AlarmStructure.RTC_AlarmDateWeekDaySel = RTC_AlarmDateWeekDaySel_Date;
+//    RTC_AlarmStructure.RTC_AlarmMask = RTC_AlarmMask_DateWeekDay | RTC_AlarmMask_Hours | RTC_AlarmMask_Minutes;
+//    RTC_SetAlarm(RTC_Format_BIN, RTC_Alarm_A, &RTC_AlarmStructure);
+//
+//    /* Enable RTC Alarm A Interrupt: this Interrupt will wake-up the system from
+//       STANDBY mode (RTC Alarm IT not enabled in NVIC) */
+//    RTC_ITConfig(RTC_IT_ALRA, ENABLE);
+//
+//    /* Enable the Alarm A */
+//    RTC_AlarmCmd(RTC_Alarm_A, ENABLE);
+//
+//    /* Clear RTC Alarm Flag */
+//    RTC_ClearFlag(RTC_FLAG_ALRAF);
+//    UB_Uart_SendString(COM2,"go to sleep",LFCR);
+//    /* Request to enter STANDBY mode (Wake Up flag is cleared in PWR_EnterSTANDBYMode function) */
+//    PWR_EnterSTANDBYMode();
+//  }
+//}
 
 /**
   * @brief  This function handles DMA2_Stream0 interrupt request.

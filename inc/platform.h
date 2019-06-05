@@ -33,6 +33,14 @@ void Config_Wakeup_INT(void);
 void PrepareSleepMode(void);
 void PrepareRunMode(void);
 
+void StartSleep(void);
+
+void SysTick_Configuration(void);;
+void RTC_Config(void);
+
+
+
+
 /*
  * ADC Pins Available
  *

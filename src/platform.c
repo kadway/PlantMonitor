@@ -12,8 +12,13 @@ struct tm time;
 #endif
 
 
-EXTI_InitTypeDef   EXTI_InitStructure;
+__IO uint32_t AsynchPrediv = 0, SynchPrediv = 0;
 uint16_t ADC3ConvertedValue[5] = {0,0,0,0,0};
+
+RTC_InitTypeDef RTC_InitStructure;
+RTC_TimeTypeDef RTC_TimeStructure;
+RTC_AlarmTypeDef  RTC_AlarmStructure;
+
 
 void initHW()
 {
@@ -43,17 +48,15 @@ void initHW()
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_Init(GPIOE, &GPIO_InitStructure);
 
-
 	ADC_Config(ADC3ConvertedValue);// ADC config
-
-
 	I2C_Config();//Configure and start I2c
 
 	//init the ds3231 rtc
 	rtc_init();
 
 	//Config_Wakeup interrupt
-	Config_Wakeup_INT();
+	RTC_Config();
+	//Config_Wakeup_INT();
 
 }
 
@@ -199,6 +202,7 @@ void Config_Wakeup_INT(void)
 {
 	GPIO_InitTypeDef   GPIO_InitStructure;
 	NVIC_InitTypeDef   NVIC_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
 
 	/* Enable GPIOA clock */
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
@@ -217,7 +221,7 @@ void Config_Wakeup_INT(void)
 	/* Configure EXTI Line0 */
 	EXTI_InitStructure.EXTI_Line = EXTI_Line0;
 	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
 
@@ -228,6 +232,35 @@ void Config_Wakeup_INT(void)
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
+}
+
+void StartSleep(void){
+	/* Disable the Alarm A */
+	RTC_AlarmCmd(RTC_Alarm_A, DISABLE);
+	RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
+	/* Set the alarm to current time + 5s */
+	RTC_AlarmStructure.RTC_AlarmTime.RTC_H12     = RTC_TimeStructure.RTC_H12;
+	RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours   = RTC_TimeStructure.RTC_Hours+1;
+	RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = RTC_TimeStructure.RTC_Minutes;
+	RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = RTC_TimeStructure.RTC_Seconds;
+	//RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = (RTC_TimeStructure.RTC_Seconds + 0x5) % 60;
+	RTC_AlarmStructure.RTC_AlarmDateWeekDay = 0x31;
+	RTC_AlarmStructure.RTC_AlarmDateWeekDaySel = RTC_AlarmDateWeekDaySel_Date;
+	RTC_AlarmStructure.RTC_AlarmMask = RTC_AlarmMask_DateWeekDay | RTC_AlarmMask_Hours | RTC_AlarmMask_Minutes;
+	RTC_SetAlarm(RTC_Format_BIN, RTC_Alarm_A, &RTC_AlarmStructure);
+
+	/* Enable RTC Alarm A Interrupt: this Interrupt will wake-up the system from
+			       STANDBY mode (RTC Alarm IT not enabled in NVIC) */
+	RTC_ITConfig(RTC_IT_ALRA, ENABLE);
+
+	/* Enable the Alarm A */
+	RTC_AlarmCmd(RTC_Alarm_A, ENABLE);
+
+	/* Clear RTC Alarm Flag */
+	RTC_ClearFlag(RTC_FLAG_ALRAF);
+
+	/* Request to enter STANDBY mode (Wake Up flag is cleared in PWR_EnterSTANDBYMode function) */
+	PWR_EnterSTANDBYMode();
 }
 
 void PrepareSleepMode(void){
@@ -265,3 +298,137 @@ void PrepareRunMode(void){
 		//initialize HW after sleep mode
 		initHW();
 }
+
+/**
+  * @brief  Configures the RTC.
+  * @param  None
+  * @retval None
+  */
+void RTC_Config(void)
+{
+
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+
+  /* Allow access to BKP Domain */
+  PWR_BackupAccessCmd(ENABLE);
+
+  /* Clear Wakeup flag */
+  PWR_ClearFlag(PWR_FLAG_WU);
+
+  /* Check if the StandBy flag is set */
+  if (PWR_GetFlagStatus(PWR_FLAG_SB) != RESET)
+  {
+    /* Clear StandBy flag */
+    PWR_ClearFlag(PWR_FLAG_SB);
+
+    /* Wait for RTC APB registers synchronisation (needed after start-up from Reset)*/
+    RTC_WaitForSynchro();
+    /* No need to configure the RTC as the RTC config(clock source, enable,
+       prescaler,...) are kept after wake-up from STANDBY */
+  }
+  else
+  {
+    /* RTC Configuration ******************************************************/
+    /* Reset Backup Domain */
+    RCC_BackupResetCmd(ENABLE);
+    RCC_BackupResetCmd(DISABLE);
+
+/* The RTC Clock may varies due to LSI frequency dispersion. */
+    /* Enable the LSI OSC */
+    RCC_LSICmd(ENABLE);
+
+    /* Wait till LSI is ready */
+    while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET)
+    {
+    }
+
+    /* Select the RTC Clock Source */
+    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+
+    SynchPrediv = 0xFF;
+    AsynchPrediv = 0x7F;
+
+
+    /* Enable the RTC Clock */
+    RCC_RTCCLKCmd(ENABLE);
+
+    /* Wait for RTC APB registers synchronisation (needed after start-up from Reset)*/
+    RTC_WaitForSynchro();
+
+    /* Set the RTC time base to 1s */
+    RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
+    RTC_InitStructure.RTC_AsynchPrediv = 0x7F;
+    RTC_InitStructure.RTC_SynchPrediv = 0x00FF;
+
+    if (RTC_Init(&RTC_InitStructure) == ERROR)
+    {
+      /* Turn on LED3 */
+      STM_EVAL_LEDOn(LED3);
+
+      /* User can add here some code to deal with this error */
+      while(1);
+    }
+
+    /* Set the time to 01h 00mn 00s AM */
+    RTC_TimeStructure.RTC_H12     = RTC_H12_AM;
+    RTC_TimeStructure.RTC_Hours   = 0x01;
+    RTC_TimeStructure.RTC_Minutes = 0x00;
+    RTC_TimeStructure.RTC_Seconds = 0x00;
+
+    if(RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure) == ERROR)
+    {
+      /* Turn on LED3 */
+      STM_EVAL_LEDOn(LED3);
+
+      /* User can add here some code to deal with this error */
+      while(1);
+    }
+  }
+
+  /* Clear RTC Alarm Flag */
+  RTC_ClearFlag(RTC_FLAG_ALRAF);
+}
+
+/**
+  * @brief  Configures the SysTick to generate an interrupt each 250 ms.
+  * @param  None
+  * @retval None
+  */
+
+void SysTick_Configuration(void)
+{
+  /* SysTick interrupt each 250 ms */
+  if (SysTick_Config((SystemCoreClock/8) / 4))
+  {
+    /* Capture error */
+    while (1);
+  }
+
+  /* Select AHB clock(HCLK) divided by 8 as SysTick clock source */
+  SysTick_CLKSourceConfig(SysTick_CLKSource_HCLK_Div8);
+
+  /* Set SysTick Preemption Priority to 1 */
+  NVIC_SetPriority(SysTick_IRQn, 0x04);
+}
+
+
+#ifdef  USE_FULL_ASSERT
+
+/**
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
+void assert_failed(uint8_t* file, uint32_t line)
+{
+  /* User can add his own implementation to report the file name and line number,
+     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+
+  /* Infinite loop */
+  while (1)
+  {
+  }
+}
+#endif

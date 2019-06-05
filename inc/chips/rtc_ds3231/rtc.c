@@ -112,8 +112,7 @@ bool rtc_check_status(uint8_t* status){
 	}
 }
 
-void rtc_init(void)
-{
+void rtc_init(void){
 	//bit fields for control and status registers
 	ds3231_control control;
 	ds3231_status status;
@@ -144,8 +143,8 @@ void rtc_init(void)
 	Delay(0x3FFF);
 
 	rtc_read_byte((uint8_t*) &status, STATUS_ADDR);
-	sprintf(buf, "Status: %#04x", status);
-	UB_Uart_SendString(COM2, buf, LFCR);
+	//sprintf(buf, "Status: %#04x", status);
+	//UB_Uart_SendString(COM2, buf, LFCR);
 //
 //	control.INTCN=1;
 //	control.A1IE=0;
