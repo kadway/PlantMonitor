@@ -27,7 +27,7 @@ int main(void){
 
 	initHW();
 	//debug
-	//UB_Uart_SendString(COM2,"HW initialized",LFCR);
+
 
 	//create the necessary tasks
 	createTasks();
@@ -35,8 +35,8 @@ int main(void){
 	vTaskStartScheduler();
 
 
-	  /* HALT */
-	  while(1);
+	/* HALT */
+	while(1);
 }
 
 

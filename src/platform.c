@@ -30,7 +30,7 @@ void initHW()
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure2;
 	// Init LED
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+	//RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
@@ -43,7 +43,6 @@ void initHW()
 
 	//init the ds3231 rtc
 	rtc_init();
-
 	//Config_Wakeup interrupt
 	RTC_Config();
 	//Config_Wakeup_INT();

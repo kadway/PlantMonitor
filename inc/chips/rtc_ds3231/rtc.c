@@ -175,7 +175,7 @@ void rtc_init(void){
 
 	time_pt = rtc_get_time();
 	sprintf(buf_time, "Wakeup at %d:%d:%d - %d/%d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
-	UB_Uart_SendString(COM2, buf_time, LFCR);
+	UB_Uart_SendString(COM3, buf_time, LFCR);
 }
 
 
