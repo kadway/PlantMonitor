@@ -30,7 +30,7 @@ void initHW()
 	GPIO_InitTypeDef GPIO_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure2;
 	// Init LED
-	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+	//RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
@@ -43,7 +43,6 @@ void initHW()
 
 	//init the ds3231 rtc
 	rtc_init();
-
 	//Config_Wakeup interrupt
 	RTC_Config();
 	//Config_Wakeup_INT();
@@ -189,8 +188,7 @@ void ADC_Config(uint16_t *ADC3ReservedMemory)
 
 }
 
-void Config_Wakeup_INT(void)
-{
+void Config_Wakeup_INT(void){
 	GPIO_InitTypeDef   GPIO_InitStructure;
 	NVIC_InitTypeDef   NVIC_InitStructure;
 	EXTI_InitTypeDef   EXTI_InitStructure;
@@ -270,34 +268,34 @@ void StartSleep(void){
 	PWR_EnterSTANDBYMode();
 }
 
-void StartSleep(void){
-	/* Disable the Alarm A */
-	RTC_AlarmCmd(RTC_Alarm_A, DISABLE);
-	RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
-	/* Set the alarm to current time + 5s */
-	RTC_AlarmStructure.RTC_AlarmTime.RTC_H12     = RTC_TimeStructure.RTC_H12;
-	RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours   = RTC_TimeStructure.RTC_Hours+1;
-	RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = RTC_TimeStructure.RTC_Minutes;
-	RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = RTC_TimeStructure.RTC_Seconds;
-	//RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = (RTC_TimeStructure.RTC_Seconds + 0x5) % 60;
-	RTC_AlarmStructure.RTC_AlarmDateWeekDay = 0x31;
-	RTC_AlarmStructure.RTC_AlarmDateWeekDaySel = RTC_AlarmDateWeekDaySel_Date;
-	RTC_AlarmStructure.RTC_AlarmMask = RTC_AlarmMask_DateWeekDay | RTC_AlarmMask_Hours | RTC_AlarmMask_Minutes;
-	RTC_SetAlarm(RTC_Format_BIN, RTC_Alarm_A, &RTC_AlarmStructure);
 
-	/* Enable RTC Alarm A Interrupt: this Interrupt will wake-up the system from
-			       STANDBY mode (RTC Alarm IT not enabled in NVIC) */
-	RTC_ITConfig(RTC_IT_ALRA, ENABLE);
+//	/* Disable the Alarm A */
+//	RTC_AlarmCmd(RTC_Alarm_A, DISABLE);
+//	RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
+//	/* Set the alarm to current time + 5s */
+//	RTC_AlarmStructure.RTC_AlarmTime.RTC_H12     = RTC_TimeStructure.RTC_H12;
+//	RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours   = RTC_TimeStructure.RTC_Hours+1;
+//	RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = RTC_TimeStructure.RTC_Minutes;
+//	RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = RTC_TimeStructure.RTC_Seconds;
+//	//RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = (RTC_TimeStructure.RTC_Seconds + 0x5) % 60;
+//	RTC_AlarmStructure.RTC_AlarmDateWeekDay = 0x31;
+//	RTC_AlarmStructure.RTC_AlarmDateWeekDaySel = RTC_AlarmDateWeekDaySel_Date;
+//	RTC_AlarmStructure.RTC_AlarmMask = RTC_AlarmMask_DateWeekDay | RTC_AlarmMask_Hours | RTC_AlarmMask_Minutes;
+//	RTC_SetAlarm(RTC_Format_BIN, RTC_Alarm_A, &RTC_AlarmStructure);
+//
+//	/* Enable RTC Alarm A Interrupt: this Interrupt will wake-up the system from
+//			       STANDBY mode (RTC Alarm IT not enabled in NVIC) */
+//	RTC_ITConfig(RTC_IT_ALRA, ENABLE);
+//
+//	/* Enable the Alarm A */
+//	RTC_AlarmCmd(RTC_Alarm_A, ENABLE);
+//
+//	/* Clear RTC Alarm Flag */
+//	RTC_ClearFlag(RTC_FLAG_ALRAF);
+//
+//	/* Request to enter STANDBY mode (Wake Up flag is cleared in PWR_EnterSTANDBYMode function) */
+//	PWR_EnterSTANDBYMode();
 
-	/* Enable the Alarm A */
-	RTC_AlarmCmd(RTC_Alarm_A, ENABLE);
-
-	/* Clear RTC Alarm Flag */
-	RTC_ClearFlag(RTC_FLAG_ALRAF);
-
-	/* Request to enter STANDBY mode (Wake Up flag is cleared in PWR_EnterSTANDBYMode function) */
-	PWR_EnterSTANDBYMode();
-}
 
 void PrepareSleepMode(void){
 	//disable other non relevant interrupts and clocks

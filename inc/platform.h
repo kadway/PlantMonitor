@@ -34,16 +34,7 @@ void PrepareSleepMode(void);
 void PrepareRunMode(void);
 void GPIO_LowPower_Config(void);
 void StartSleep(void);
-
-void SysTick_Configuration(void);;
-void RTC_Config(void);
-
-
-
-
-void StartSleep(void);
-
-void SysTick_Configuration(void);;
+void SysTick_Configuration(void);
 void RTC_Config(void);
 
 
@@ -58,7 +49,7 @@ void RTC_Config(void);
  * PC3 - ADC123_IN13
  * PC4 - ADC12_IN14
  * PC5 - ADC12_IN15
- * PA0 - ADC123_IN0 (also Discovery blue Push button)
+ * PA0 - ADC123_IN0 (also Discovery blue Push button and WAKEUP pin)
  * PA1 - ADC123_IN1
  * PA2 - ADC123_IN2
  * PA3 - ADC123_IN3
