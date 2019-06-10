@@ -15,15 +15,16 @@ TaskHandle_t sleepTaskHndl = NULL;
 xQueueHandle pbq;
 
 /*Global Variables*/
-char sAdcValue[24];
+char sAdcValue[50];
 uint16_t i = 0;
 
 
 //Semaphore handlers
 SemaphoreHandle_t xSemaphore = NULL;
 
-bool dataReady = 0;
-bool alarm_not_fired = 1;
+bool adcready = 0;
+
+char ADC1_Pins [14][4] = { "PA1\0", "PA2\0", "PA3\0", "PA4\0","PA5\0", "PA6\0", "PA7\0", "PB0\0", "PB1\0","PC1\0", "PC2\0", "PC3\0", "PC4\0", "PC5\0"};
 
 void createTasks(void);
 void PoolSensors(void *pvParameters);

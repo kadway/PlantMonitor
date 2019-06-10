@@ -27,8 +27,6 @@ int main(void){
 
 	initHW();
 	//debug
-
-
 	//create the necessary tasks
 	createTasks();
 	/* Start the RTOS Scheduler */

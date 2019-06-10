@@ -72,32 +72,20 @@ void createTasks(void){
  */
 void PoolSensors(void *pvParameters){
 
-
-	xSemaphore = xSemaphoreCreateMutex();
-
-
 	for (;;) {
 		//UB_Uart_SendString(COM3,"PoolSensors",LFCR);
 
-		if(!dataReady){
-			//UB_Uart_SendString(COM3,"Start ADC conversion",LFCR);
-			ADC_SoftwareStartConv(ADC3);
+		if(!adcready){
+			if(!ADC_GetSoftwareStartConvStatus(ADC1)){
+				//UB_Uart_SendString(COM3,"Start ADC conversion",LFCR);
+				ADC_SoftwareStartConv(ADC1);
+			}
 		}
-		//UB_Uart_SendString(COM3,"sensorTask suspended",LFCR);
-		//vTaskSuspend(sensorTaskHndl); //suspend itself
-		//	UB_Uart_SendString(COM3,"sensorTask processing data",LFCR);
-
-		if(dataReady){
-			//if( xSemaphoreTake( xSemaphore, ( TickType_t ) 100 ) == pdTRUE ){
-				dataReady = 0;
-				//UB_Uart_SendString(COM3, "Adc ready", LFCR);
-				//xSemaphoreGive( xSemaphore );
-				vTaskResume(waterTaskHndl);
-				vTaskSuspend(NULL);
-			//}
+		if(adcready){
+			vTaskResume(waterTaskHndl);
+			vTaskSuspend(NULL);
 		}
-		//delay wait for ADC conversion finished
-		vTaskDelay(2 * configTICK_RATE_HZ );
+		vTaskDelay(1 * configTICK_RATE_HZ );
 	}
 }
 
@@ -109,8 +97,8 @@ void WaterPlants(void *pvParameters){
 	//TODO: read in the measured values and decide on the actuation of the water pump
 	//      create a timer to control the watering time
 
-	uint16_t* ADC_pointer=NULL;
-	ADC_pointer=getSensorValues();
+	uint16_t* ADC1Data=NULL;
+	ADC1Data=getSensorValues();
 	char buf_temp[25];
 	int8_t integer;
 	uint8_t fractional;
@@ -123,14 +111,18 @@ void WaterPlants(void *pvParameters){
 		sprintf(buf_temp, "Temp: %d.%d ºC", integer, fractional);
 		UB_Uart_SendString(COM3, buf_temp, LFCR);
 
-		for(i=0; i<4; i++){
-			ADC_pointer[i] = (uint16_t) (( (uint32_t)ADC_pointer[i] * 3000) / 4096);
+		//get respective voltage values for the adc conversions
+		for(i=0; i<14; i++){
+			ADC1Data[i] = (uint16_t) (( (uint32_t)ADC1Data[i] * 3000) / 4096);
 		}
-		//for(i=0; i<4; i++){
-		//	sprintf(sAdcValue, "Channel %d, value: %d mV", i, ADC_pointer[i]);
-		//	UB_Uart_SendString(COM3, sAdcValue, LFCR);
-		//}
 
+		//print out the results
+		for(i=0; i<14; i++){
+			sprintf(sAdcValue, "ADC1 pin %s, value: %d mV", ADC1_Pins[i], ADC1Data[i]);
+			UB_Uart_SendString(COM3, sAdcValue, LFCR);
+		}
+
+		//create a timer for watering (Water pump ON)
 		timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
 				pdMS_TO_TICKS(1000), 			   /* period/time */
 				pdFALSE, 						   /* auto reload */
@@ -167,7 +159,7 @@ void SendDataOut_IPC(void *pvParameters) {
 		status = xQueueReceive(pbq, &sig, portMAX_DELAY); /* Receive Message */
 		/* portMAX_DELAY blocks task indefinitely if queue is empty */
 		if(status == pdTRUE) {
-			GPIO_ToggleBits(GPIOD,GPIO_Pin_14);
+
 
 		}
 	}

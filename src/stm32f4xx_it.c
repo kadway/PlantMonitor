@@ -212,25 +212,15 @@ void EXTI0_IRQHandler(void)
   * @param  None
   * @retval None
   */
-extern bool dataReady;
+extern bool adcready;
 
 void DMA2_Stream0_IRQHandler(void) {
-
+	//UB_Uart_SendString(COM3,"Int DMA0",LFCR);
 	if(DMA_GetITStatus(DMA2_Stream0, DMA_IT_TCIF0)) {
 
 		//temporary solution for signaling that data is ready
-		dataReady = 1;
-		//UB_Uart_SendString(COM2, "interrupt dma", LFCR);
-		//resume the task that prints out the data
-		// NOT WORKING
-		/*BaseType_t xYieldRequired;
-		xYieldRequired = pdFALSE;
-		xYieldRequired = xTaskResumeFromISR(sensorTaskHndl);
-		portYIELD_FROM_ISR(xYieldRequired);*/
-		/*BaseType_t xHigherPriorityTaskWoken;
-		xHigherPriorityTaskWoken = pdFALSE;
-		vTaskNotifyGiveFromISR( sensorTaskHndl, &xHigherPriorityTaskWoken );
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );*/
+		adcready = 1;
+		//UB_Uart_SendString(COM3,"Adc ready",LFCR);
 	}
 
 	DMA_ClearITPendingBit(DMA2_Stream0, DMA_IT_TCIF0);		//clear all the interrupts
