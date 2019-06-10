@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * @file    IO_Toggle/stm32f4xx_it.c 
+  * @file    IO_Toggle/stm32f4xx_it.c
   * @author  MCD Application Team
   * @version V1.0.0
   * @date    19-September-2011
   * @brief   Main Interrupt Service Routines.
-  *          This file provides template for all exceptions handler and 
+  *          This file provides template for all exceptions handler and
   *          peripherals interrupt service routine.
   ******************************************************************************
   * @attention
@@ -19,7 +19,7 @@
   *
   * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
   ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
@@ -30,7 +30,7 @@
 
 /** @addtogroup IO_Toggle
   * @{
-  */ 
+  */
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -158,18 +158,13 @@ void DebugMon_Handler(void)
   * @retval None
   */
 extern TaskHandle_t sensorTaskHndl;
-extern bool alarm_not_fired;
+
 
 void EXTI0_IRQHandler(void)
 {
 
   if(EXTI_GetITStatus(EXTI_Line0) != RESET)
-  {     char buf_time[45];
-		struct tm *time_pt=NULL;
-		time_pt = rtc_get_time();
-		sprintf(buf_time, "Alarm fired: %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
-		UB_Uart_SendString(COM2, buf_time, LFCR);
-		alarm_not_fired=0;
+  {
     /* Clear the EXTI line 0 pending bit */
     EXTI_ClearITPendingBit(EXTI_Line0);
   }
@@ -244,10 +239,10 @@ void DMA2_Stream0_IRQHandler(void) {
 
 /**
   * @}
-  */ 
+  */
 
 /**
   * @}
-  */ 
+  */
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/

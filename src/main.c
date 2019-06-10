@@ -27,7 +27,7 @@ int main(void){
 
 	initHW();
 	//debug
-	UB_Uart_SendString(COM2,"HW initialized",LFCR);
+	//UB_Uart_SendString(COM2,"HW initialized",LFCR);
 
 	//create the necessary tasks
 	createTasks();
@@ -36,8 +36,7 @@ int main(void){
 	  /* Enable WKUP pin  */
 	  //PWR_WakeUpPinCmd(ENABLE);
 
+
 	  /* HALT */
 	  while(1);
 }
-
-
