@@ -22,6 +22,8 @@
 #include "rtc.h"
 #include "helpers.h"
 
+
+
 //#define SETTIME //define to set the hardcoded time on startup
 
 void initHW();
@@ -37,8 +39,6 @@ void StartSleep(void);
 
 void SysTick_Configuration(void);;
 void RTC_Config(void);
-
-
 
 
 /*

@@ -1,5 +1,42 @@
 #include "appTasks.h"
 
+Pot_t allPots[] = {
+			{POT1,POT1_THRESHOLD,POT1_NUM_SENS,
+				{POT1_WATER_PUMP_PORT,POT1_WATER_PUMP_PIN},
+				{POT1_SOLENOID_PORT,POT1_SOLENOID_PIN},
+					{{POT1_SENSOR1_SUPPLY_PORT,POT1_SENSOR1_SUPPLY_PIN},{POT1_SENSOR2_SUPPLY_PORT,POT1_SENSOR2_SUPPLY_PIN},
+					{POT1_SENSOR3_SUPPLY_PORT,POT1_SENSOR3_SUPPLY_PIN},{POT1_SENSOR4_SUPPLY_PORT,POT1_SENSOR4_SUPPLY_PIN}}},
+
+			{POT2,POT2_THRESHOLD,POT2_NUM_SENS,
+				{POT2_WATER_PUMP_PORT,POT2_WATER_PUMP_PIN},
+				{POT2_SOLENOID_PORT,POT2_SOLENOID_PIN},
+					{{POT2_SENSOR1_SUPPLY_PORT,POT2_SENSOR1_SUPPLY_PIN},{POT2_SENSOR2_SUPPLY_PORT,POT2_SENSOR2_SUPPLY_PIN},
+					{POT2_SENSOR3_SUPPLY_PORT,POT2_SENSOR3_SUPPLY_PIN},{POT2_SENSOR4_SUPPLY_PORT,POT2_SENSOR4_SUPPLY_PIN}}},
+
+			{POT3,POT3_THRESHOLD,POT3_NUM_SENS,
+				{POT3_WATER_PUMP_PORT,POT3_WATER_PUMP_PIN},
+				{POT3_SOLENOID_PORT,POT3_SOLENOID_PIN},
+					{{POT3_SENSOR1_SUPPLY_PORT,POT3_SENSOR1_SUPPLY_PIN},{POT3_SENSOR2_SUPPLY_PORT,POT3_SENSOR2_SUPPLY_PIN},
+					{POT3_SENSOR3_SUPPLY_PORT,POT3_SENSOR3_SUPPLY_PIN},{POT3_SENSOR4_SUPPLY_PORT,POT3_SENSOR4_SUPPLY_PIN}}},
+
+			{POT4,POT4_THRESHOLD,POT4_NUM_SENS,
+				{POT4_WATER_PUMP_PORT,POT4_WATER_PUMP_PIN},
+				{POT4_SOLENOID_PORT,POT4_SOLENOID_PIN},
+					{{POT4_SENSOR1_SUPPLY_PORT,POT4_SENSOR1_SUPPLY_PIN},{POT4_SENSOR2_SUPPLY_PORT,POT4_SENSOR2_SUPPLY_PIN},
+					{POT4_SENSOR3_SUPPLY_PORT,POT4_SENSOR3_SUPPLY_PIN},{POT4_SENSOR4_SUPPLY_PORT,POT4_SENSOR4_SUPPLY_PIN}}},
+
+			{POT5,POT5_THRESHOLD,POT5_NUM_SENS,
+				{POT5_WATER_PUMP_PORT,POT5_WATER_PUMP_PIN},
+				{POT5_SOLENOID_PORT,POT5_SOLENOID_PIN},
+					{{POT5_SENSOR1_SUPPLY_PORT,POT5_SENSOR1_SUPPLY_PIN},{POT5_SENSOR2_SUPPLY_PORT,POT5_SENSOR2_SUPPLY_PIN},
+					{POT5_SENSOR3_SUPPLY_PORT,POT5_SENSOR3_SUPPLY_PIN},{POT5_SENSOR4_SUPPLY_PORT,POT5_SENSOR4_SUPPLY_PIN}}},
+
+			{POT6,POT6_THRESHOLD,POT6_NUM_SENS,
+				{POT6_WATER_PUMP_PORT,POT6_WATER_PUMP_PIN},
+					{POT6_SOLENOID_PORT,POT6_SOLENOID_PIN},
+					{{POT6_SENSOR1_SUPPLY_PORT,POT6_SENSOR1_SUPPLY_PIN},{POT6_SENSOR2_SUPPLY_PORT,POT6_SENSOR2_SUPPLY_PIN},
+					{POT6_SENSOR3_SUPPLY_PORT,POT6_SENSOR3_SUPPLY_PIN},{POT6_SENSOR4_SUPPLY_PORT,POT6_SENSOR4_SUPPLY_PIN}}},
+};
 
 /* Create tasks */
 void createTasks(void){
@@ -71,17 +108,30 @@ void createTasks(void){
  * TASK 1: Task to read data from sensors
  */
 void PoolSensors(void *pvParameters){
-
+	uint16_t i = 0;
+	uint16_t j = 0;
 	for (;;) {
 		//UB_Uart_SendString(COM3,"PoolSensors",LFCR);
 
 		if(!adcready){
 			if(!ADC_GetSoftwareStartConvStatus(ADC1)){
-				//UB_Uart_SendString(COM3,"Start ADC conversion",LFCR);
+				//Enable voltage for moisture sensors
+				for(i=0;i<NUM_POTS; i++){
+					for(j=0;j<allPots[i].num_sensors; j++){
+						GPIO_SetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
+					}
+				}
+				//start ADC conversions
 				ADC_SoftwareStartConv(ADC1);
 			}
 		}
 		if(adcready){
+			//disable voltage for moisture sensors
+			for(i=0;i<NUM_POTS; i++){
+				for(j=0;j<allPots[i].num_sensors; j++){
+					GPIO_ResetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
+				}
+			}
 			vTaskResume(waterTaskHndl);
 			vTaskSuspend(NULL);
 		}
@@ -102,6 +152,8 @@ void WaterPlants(void *pvParameters){
 	char buf_temp[25];
 	int8_t integer;
 	uint8_t fractional;
+	uint16_t i = 0;
+	uint16_t PotNum = 0;
 
 	for (;;) {
 		//suspend itself wait for pooling sensor task to resume it
@@ -122,20 +174,11 @@ void WaterPlants(void *pvParameters){
 			UB_Uart_SendString(COM3, sAdcValue, LFCR);
 		}
 
-		//create a timer for watering (Water pump ON)
-		timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
-				pdMS_TO_TICKS(1000), 			   /* period/time */
-				pdFALSE, 						   /* auto reload */
-				(void*)0, 					       /* timer ID */
-				vTimerCallback1SecExpired); 	   /* callback */
+		for (PotNum=0; PotNum<NUM_POTS; PotNum++){
+			if(CheckMoisture(allPots[PotNum].num_sensors, allPots[PotNum].threshold, allPots[PotNum].offset, ADC1Data)==DRY){
+				WaterPot(PotNum, integer);
+			}
 
-		if (timerHndl1Sec==NULL) {
-			for(;;); /* failure! */
-			UB_Uart_SendString(COM3,"Timer failure",LFCR);
-		}
-		if (xTimerStart(timerHndl1Sec, 0)!=pdPASS) {
-			for(;;); /* failure!?! */
-			UB_Uart_SendString(COM3,"Failure",LFCR);
 		}
 
 		//UB_Uart_SendString(COM3,"Watering... Wait for timer",LFCR);
@@ -143,7 +186,42 @@ void WaterPlants(void *pvParameters){
 		vTaskSuspend(NULL);
 	}
 }
+uint8_t WaterPot(){
 
+	//create a timer for watering (Water pump ON)
+			timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
+					pdMS_TO_TICKS(1000), 			   /* period/time */
+					pdFALSE, 						   /* auto reload */
+					(void*)0, 					       /* timer ID */
+					vTimerCallback1SecExpired); 	   /* callback */
+
+			if (timerHndl1Sec==NULL) {
+				for(;;); /* failure! */
+				UB_Uart_SendString(COM3,"Timer failure",LFCR);
+			}
+			if (xTimerStart(timerHndl1Sec, 0)!=pdPASS) {
+				for(;;); /* failure!?! */
+				UB_Uart_SendString(COM3,"Failure",LFCR);
+			}
+}
+
+//offset is the index of ADC1Data where the first moisture value is
+uint8_t CheckMoisture(uint8_t num_sensors, uint16_t threshold, uint8_t offset, uint16_t* data){
+	uint16_t avg = 0;
+	uint8_t i;
+
+	for (i=0; i<num_sensors; i++){
+		avg+=data[offset+i];
+		avg= avg/num_sensors;
+	}
+
+	if(avg<threshold){
+		return DRY; //need to water
+	}
+
+	//no need to water
+	return MOIST;
+}
 
 /**
  * TASK 3: Receive data via Inter-Process Communication (IPC) and send it out
@@ -253,7 +331,7 @@ static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
 	//sprintf(sCounter, "Timer %d expired. Resume sleep task.", counter);
 	counter++;
 	//UB_Uart_SendString(COM3,sCounter,LFCR);
-	vTaskResume(sleepTaskHndl);
+	vTaskResume(waterTaskHndl);
 }
 
 
