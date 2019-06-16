@@ -169,6 +169,16 @@ void EXTI0_IRQHandler(void)
     EXTI_ClearITPendingBit(EXTI_Line0);
   }
 }
+void EXTI1_IRQHandler(void)
+{
+
+  if(EXTI_GetITStatus(EXTI_Line1) != RESET)
+  {
+    /* Clear the EXTI line 0 pending bit */
+	UB_Uart_SendString(COM2,"rtc alarm!",LFCR);
+    EXTI_ClearITPendingBit(EXTI_Line1);
+  }
+}
 //
 //void EXTI1_IRQHandler(void)
 //{

@@ -39,6 +39,7 @@ void StartSleep(void);
 
 void SysTick_Configuration(void);;
 void RTC_Config(void);
+void Config_DS3231_Alarm_INT(void);
 
 
 /*

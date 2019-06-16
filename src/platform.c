@@ -51,6 +51,8 @@ void initHW()
 	RTC_Config();
 	//wakeup from user button pin PA0
 	Config_Wakeup_INT();
+	//set interrupt for ds3231 alarm
+	//Config_DS3231_Alarm_INT();
 
 }
 
@@ -232,6 +234,42 @@ void Config_Wakeup_INT(void)
 
 	/* Enable WKUP pin  */
 	PWR_WakeUpPinCmd(ENABLE);
+
+}
+
+void Config_DS3231_Alarm_INT(void)
+{
+	GPIO_InitTypeDef   GPIO_InitStructure;
+	NVIC_InitTypeDef   NVIC_InitStructure;
+	EXTI_InitTypeDef   EXTI_InitStructure;
+
+	/* Enable GPIOA clock */
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	/* Enable SYSCFG clock */
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+
+	/* Configure PA0 pin as input floating */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+	/* Connect EXTI Line1 to PC12 pin */
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOC, EXTI_PinSource12);
+
+	/* Configure EXTI Line0 */
+	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
+
+	/* Enable and set EXTI Line1 Interrupt */
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
 
 }
 

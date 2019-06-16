@@ -1,37 +1,37 @@
 #include "appTasks.h"
 
 Pot_t allPots[] = {
-			{POT1,POT1_THRESHOLD,POT1_NUM_SENS,
+			{POT1, MOIST, DEFAULT_WATER_TIME, POT1_THRESHOLD,POT1_NUM_SENS,
 				{POT1_WATER_PUMP_PORT,POT1_WATER_PUMP_PIN},
 				{POT1_SOLENOID_PORT,POT1_SOLENOID_PIN},
 					{{POT1_SENSOR1_SUPPLY_PORT,POT1_SENSOR1_SUPPLY_PIN},{POT1_SENSOR2_SUPPLY_PORT,POT1_SENSOR2_SUPPLY_PIN},
 					{POT1_SENSOR3_SUPPLY_PORT,POT1_SENSOR3_SUPPLY_PIN},{POT1_SENSOR4_SUPPLY_PORT,POT1_SENSOR4_SUPPLY_PIN}}},
 
-			{POT2,POT2_THRESHOLD,POT2_NUM_SENS,
+			{POT2, MOIST, DEFAULT_WATER_TIME, POT2_THRESHOLD,POT2_NUM_SENS,
 				{POT2_WATER_PUMP_PORT,POT2_WATER_PUMP_PIN},
 				{POT2_SOLENOID_PORT,POT2_SOLENOID_PIN},
 					{{POT2_SENSOR1_SUPPLY_PORT,POT2_SENSOR1_SUPPLY_PIN},{POT2_SENSOR2_SUPPLY_PORT,POT2_SENSOR2_SUPPLY_PIN},
 					{POT2_SENSOR3_SUPPLY_PORT,POT2_SENSOR3_SUPPLY_PIN},{POT2_SENSOR4_SUPPLY_PORT,POT2_SENSOR4_SUPPLY_PIN}}},
 
-			{POT3,POT3_THRESHOLD,POT3_NUM_SENS,
+			{POT3, MOIST, DEFAULT_WATER_TIME, POT3_THRESHOLD,POT3_NUM_SENS,
 				{POT3_WATER_PUMP_PORT,POT3_WATER_PUMP_PIN},
 				{POT3_SOLENOID_PORT,POT3_SOLENOID_PIN},
 					{{POT3_SENSOR1_SUPPLY_PORT,POT3_SENSOR1_SUPPLY_PIN},{POT3_SENSOR2_SUPPLY_PORT,POT3_SENSOR2_SUPPLY_PIN},
 					{POT3_SENSOR3_SUPPLY_PORT,POT3_SENSOR3_SUPPLY_PIN},{POT3_SENSOR4_SUPPLY_PORT,POT3_SENSOR4_SUPPLY_PIN}}},
 
-			{POT4,POT4_THRESHOLD,POT4_NUM_SENS,
+			{POT4, MOIST, DEFAULT_WATER_TIME, POT4_THRESHOLD,POT4_NUM_SENS,
 				{POT4_WATER_PUMP_PORT,POT4_WATER_PUMP_PIN},
 				{POT4_SOLENOID_PORT,POT4_SOLENOID_PIN},
 					{{POT4_SENSOR1_SUPPLY_PORT,POT4_SENSOR1_SUPPLY_PIN},{POT4_SENSOR2_SUPPLY_PORT,POT4_SENSOR2_SUPPLY_PIN},
 					{POT4_SENSOR3_SUPPLY_PORT,POT4_SENSOR3_SUPPLY_PIN},{POT4_SENSOR4_SUPPLY_PORT,POT4_SENSOR4_SUPPLY_PIN}}},
 
-			{POT5,POT5_THRESHOLD,POT5_NUM_SENS,
+			{POT5, MOIST, DEFAULT_WATER_TIME, POT5_THRESHOLD,POT5_NUM_SENS,
 				{POT5_WATER_PUMP_PORT,POT5_WATER_PUMP_PIN},
 				{POT5_SOLENOID_PORT,POT5_SOLENOID_PIN},
 					{{POT5_SENSOR1_SUPPLY_PORT,POT5_SENSOR1_SUPPLY_PIN},{POT5_SENSOR2_SUPPLY_PORT,POT5_SENSOR2_SUPPLY_PIN},
 					{POT5_SENSOR3_SUPPLY_PORT,POT5_SENSOR3_SUPPLY_PIN},{POT5_SENSOR4_SUPPLY_PORT,POT5_SENSOR4_SUPPLY_PIN}}},
 
-			{POT6,POT6_THRESHOLD,POT6_NUM_SENS,
+			{POT6, MOIST, DEFAULT_WATER_TIME, POT6_THRESHOLD,POT6_NUM_SENS,
 				{POT6_WATER_PUMP_PORT,POT6_WATER_PUMP_PIN},
 					{POT6_SOLENOID_PORT,POT6_SOLENOID_PIN},
 					{{POT6_SENSOR1_SUPPLY_PORT,POT6_SENSOR1_SUPPLY_PIN},{POT6_SENSOR2_SUPPLY_PORT,POT6_SENSOR2_SUPPLY_PIN},
@@ -44,7 +44,7 @@ void createTasks(void){
 	xTaskCreate(
 			PoolSensors,                 /* Function pointer */
 			"Task1",                   /* Task name - for debugging only*/
-			configMINIMAL_STACK_SIZE,         /* Stack depth in words */
+			configMINIMAL_STACK_SIZE*2,         /* Stack depth in words */
 			(void*) NULL,                     /* Pointer to tasks arguments (parameter) */
 			tskIDLE_PRIORITY + 2UL,           /* Task priority*/
 			&sensorTaskHndl                   /* Task handle */
@@ -53,19 +53,19 @@ void createTasks(void){
 	xTaskCreate(
 			WaterPlants,                 /* Function pointer */
 			"Task2",                          /* Task name - for debugging only*/
-			configMINIMAL_STACK_SIZE,         /* Stack depth in words */
+			configMINIMAL_STACK_SIZE*100,         /* Stack depth in words */
 			(void*) NULL,                     /* Pointer to tasks arguments (parameter) */
 			tskIDLE_PRIORITY + 2UL,           /* Task priority*/
 			&waterTaskHndl                             /* Task handle */
 	);
 
-	xTaskCreate(
-			SendDataOut_IPC,
-			"Task3",
-			configMINIMAL_STACK_SIZE,
-			(void*) NULL,
-			tskIDLE_PRIORITY + 2UL,
-			NULL);
+//	xTaskCreate(
+//			SendDataOut_IPC,
+//			"Task3",
+//			configMINIMAL_STACK_SIZE,
+//			(void*) NULL,
+//			tskIDLE_PRIORITY + 2UL,
+//			NULL);
 
 	xTaskCreate(
 			SleepAlarm,                 /* Function pointer */
@@ -76,22 +76,32 @@ void createTasks(void){
 			&sleepTaskHndl                              /* Task handle */
 	);
 
-	xTaskCreate(
-			DetectButtonPress,
-			"Task5",
-			configMINIMAL_STACK_SIZE,
-			(void*) NULL,
-			tskIDLE_PRIORITY + 2UL,
-			NULL);
+//	xTaskCreate(
+//			DetectButtonPress,
+//			"Task5",
+//			configMINIMAL_STACK_SIZE,
+//			(void*) NULL,
+//			tskIDLE_PRIORITY + 2UL,
+//			NULL);
 
 	//create semaphore
-	xSemaphore = xSemaphoreCreateBinary();
+//	xSemaphore = xSemaphoreCreateBinary();
+   //create a timer
+	timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
+			pdMS_TO_TICKS(3000), 			   /* period/time */
+			pdFALSE, 						   /* auto reload */
+			(void*)0, 					       /* timer ID */
+			vTimerCallback1SecExpired); 	   /* callback */
+
+	if (timerHndl1Sec==NULL) {
+		UB_Uart_SendString(COM3,"Timer failure",LFCR);
+	}
 
 	/* Create IPC variables */
-	pbq = xQueueCreate(10, sizeof(int));
-	if (pbq == 0) {
-		while(1); /* fatal error */
-	}
+//	pbq = xQueueCreate(10, sizeof(int));
+//	if (pbq == 0) {
+//		while(1); /* fatal error */
+//	}
 
 }
 
@@ -153,8 +163,9 @@ void WaterPlants(void *pvParameters){
 	int8_t integer;
 	uint8_t fractional;
 	uint16_t i = 0;
-	uint16_t PotNum = 0;
-
+	int PotNum = 0;
+	char buf[50];
+	struct tm *time_pt=NULL;
 	for (;;) {
 		//suspend itself wait for pooling sensor task to resume it
 		vTaskSuspend(NULL);
@@ -175,50 +186,112 @@ void WaterPlants(void *pvParameters){
 		}
 
 		for (PotNum=0; PotNum<NUM_POTS; PotNum++){
-			if(CheckMoisture(allPots[PotNum].num_sensors, allPots[PotNum].threshold, allPots[PotNum].offset, ADC1Data)==DRY){
+			sprintf(buf, "Check pot %d", PotNum);
+			UB_Uart_SendString(COM3, buf, LFCR);
+			allPots[PotNum].status=CheckMoisture(PotNum);
+			if(allPots[PotNum].status==DRY){
 				WaterPot(PotNum, integer);
 			}
-
 		}
 
-		//UB_Uart_SendString(COM3,"Watering... Wait for timer",LFCR);
-		//suspend itself timer should take over
+
+		UB_Uart_SendString(COM3, "resume sleep", LFCR);
+		Delay(0xFFFF);
+		vTaskResume(sleepTaskHndl);
+		//suspend itself
 		vTaskSuspend(NULL);
 	}
 }
-uint8_t WaterPot(){
+uint8_t WaterPot(uint8_t pot, int8_t temperature){
+		//TickType_t time_ms = 1000; //~ 30 seconds
+		char buf_time[50];
+		struct tm *time_pt=NULL;
+		//create a timer for watering (Water pump ON)
 
-	//create a timer for watering (Water pump ON)
-			timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
-					pdMS_TO_TICKS(1000), 			   /* period/time */
-					pdFALSE, 						   /* auto reload */
-					(void*)0, 					       /* timer ID */
-					vTimerCallback1SecExpired); 	   /* callback */
+		time_pt = rtc_get_time();
+		sprintf(buf_time, "Water pot at %d:%d:%d - %d/%d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
+		UB_Uart_SendString(COM3, buf_time, LFCR);
+//		time_pt->min = time_pt->min + allPots[pot].water_time;
+//		rtc_set_alarm(time_pt);
+//		Delay(0x3FFF);
+//		time_pt = rtc_get_alarm();
+//		sprintf(buf_time, "Water stop Alarm set %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+//		UB_Uart_SendString(COM3, buf_time, LFCR);
+//		Delay(0x3FFF);
 
-			if (timerHndl1Sec==NULL) {
-				for(;;); /* failure! */
-				UB_Uart_SendString(COM3,"Timer failure",LFCR);
-			}
-			if (xTimerStart(timerHndl1Sec, 0)!=pdPASS) {
-				for(;;); /* failure!?! */
-				UB_Uart_SendString(COM3,"Failure",LFCR);
-			}
+		//Start water pump
+		GPIO_SetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
+		//Energize solenoid
+		GPIO_SetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
+
+		UB_Uart_SendString(COM3,"Started watering",LFCR);
+
+		//wait for alarm
+		if (xTimerStart(timerHndl1Sec, 0)!=pdPASS) {
+			UB_Uart_SendString(COM3,"Failure",LFCR);
+			Delay(0xFFFF);
+		}
+
+		UB_Uart_SendString(COM3,"Started timer",LFCR);
+		vTaskSuspend(NULL);
+//		while(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_12)==Bit_SET){
+//			vTaskDelay(1 * configTICK_RATE_HZ );
+//			UB_Uart_SendString(COM3,"wait alarm",LFCR);
+//		}
+
+
+//		time_pt = rtc_get_time();
+//		sprintf(buf_time, "Started watering at %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+//		UB_Uart_SendString(COM3, buf_time, LFCR);
+//		Delay(0xFFFF);
+		//Wait for the timer finished
+		//vTaskSuspend(waterTaskHndl);
+
+		//Stop water pump
+		GPIO_ResetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
+		//De-energize solenoid
+		GPIO_ResetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
+
+		time_pt = rtc_get_time();
+		sprintf(buf_time, "Stopped watering at %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+		UB_Uart_SendString(COM3, buf_time, LFCR);
+
+	return 0;
 }
 
 //offset is the index of ADC1Data where the first moisture value is
-uint8_t CheckMoisture(uint8_t num_sensors, uint16_t threshold, uint8_t offset, uint16_t* data){
+uint8_t CheckMoisture(uint8_t PotNum){
 	uint16_t avg = 0;
 	uint8_t i;
+	char buf[50];
+	uint16_t* ADC1Data=NULL;
+	ADC1Data=getSensorValues();
 
-	for (i=0; i<num_sensors; i++){
-		avg+=data[offset+i];
-		avg= avg/num_sensors;
+	sprintf(buf, "sensors number =  %d ", allPots[PotNum].num_sensors);
+	UB_Uart_SendString(COM3, buf, LFCR);
+
+	sprintf(buf, "threshold =  %d mV", allPots[PotNum].threshold);
+	UB_Uart_SendString(COM3, buf, LFCR);
+
+	for (i=0; i<allPots[PotNum].num_sensors; i++){
+		avg+=ADC1Data[(allPots[PotNum].offset)+i];
+
 	}
 
-	if(avg<threshold){
+	//sprintf(buf, "sum =  ", avg);
+	//UB_Uart_SendString(COM3, buf, LFCR);
+
+	avg= avg/allPots[PotNum].num_sensors;
+
+	sprintf(buf, "avg =  %d mV", avg);
+	UB_Uart_SendString(COM3, buf, LFCR);
+	//sprintf(buf, "avg =  %d mV", avg);
+	//UB_Uart_SendString(COM3, buf, LFCR);
+	if(avg<allPots[PotNum].threshold){
+		UB_Uart_SendString(COM3, "return dry", LFCR);
 		return DRY; //need to water
 	}
-
+	UB_Uart_SendString(COM3, "return moist", LFCR);
 	//no need to water
 	return MOIST;
 }
@@ -228,20 +301,20 @@ uint8_t CheckMoisture(uint8_t num_sensors, uint16_t threshold, uint8_t offset, u
  *
  */
 
-void SendDataOut_IPC(void *pvParameters) {
-	//TODO: Receive monitored values from sensors and send them over the air to be processed elsewhere (with NRF24L?)
-	int sig;
-	portBASE_TYPE status;
-
-	while (1) {
-		status = xQueueReceive(pbq, &sig, portMAX_DELAY); /* Receive Message */
-		/* portMAX_DELAY blocks task indefinitely if queue is empty */
-		if(status == pdTRUE) {
-
-
-		}
-	}
-}
+//void SendDataOut_IPC(void *pvParameters) {
+//	//TODO: Receive monitored values from sensors and send them over the air to be processed elsewhere (with NRF24L?)
+//	int sig;
+//	portBASE_TYPE status;
+//
+//	while (1) {
+//		status = xQueueReceive(pbq, &sig, portMAX_DELAY); /* Receive Message */
+//		/* portMAX_DELAY blocks task indefinitely if queue is empty */
+//		if(status == pdTRUE) {
+//
+//
+//		}
+//	}
+//}
 
 /**
  * TASK 5: Detect Button Press
@@ -302,35 +375,30 @@ void SleepAlarm(void *pvParameters){
  * TASK 5: Detect Button Press
  * 			And Signal Event via Inter-Process Communication (IPC)
  */
-void DetectButtonPress(void *pvParameters){
-	//TODO: still left over from original code. Decide if a button press is relevant for the application.
-	int sig = 1;
-	while (1) {
-		/* Detect Button Press  */
-		if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)>0) {
-			while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)>0){
-				vTaskDelay(pdMS_TO_TICKS(500)); /* Button Debounce Delay */
-			}
-			while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==0){
-				vTaskDelay(pdMS_TO_TICKS(500)); /* Button Debounce Delay */
-			}
-
-			xQueueSendToBack(pbq, &sig, 0); /* Send Message */
-			UB_Uart_SendString(COM3,"Button pressed",LFCR);
-		}
-	}
-}
+//void DetectButtonPress(void *pvParameters){
+//	//TODO: still left over from original code. Decide if a button press is relevant for the application.
+//	int sig = 1;
+//	while (1) {
+//		/* Detect Button Press  */
+//		if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)>0) {
+//			while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)>0){
+//				vTaskDelay(pdMS_TO_TICKS(500)); /* Button Debounce Delay */
+//			}
+//			while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==0){
+//				vTaskDelay(pdMS_TO_TICKS(500)); /* Button Debounce Delay */
+//			}
+//
+//			xQueueSendToBack(pbq, &sig, 0); /* Send Message */
+//			UB_Uart_SendString(COM3,"Button pressed",LFCR);
+//		}
+//	}
+//}
 
 
 
 //Timer functions
 
 static void vTimerCallback1SecExpired(xTimerHandle pxTimer) {
-	char sCounter[50];
-
-	//sprintf(sCounter, "Timer %d expired. Resume sleep task.", counter);
-	counter++;
-	//UB_Uart_SendString(COM3,sCounter,LFCR);
 	vTaskResume(waterTaskHndl);
 }
 

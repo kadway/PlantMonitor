@@ -29,6 +29,7 @@ int main(void){
 	//debug
 	//create the necessary tasks
 	createTasks();
+
 	/* Start the RTOS Scheduler */
 	vTaskStartScheduler();
 
