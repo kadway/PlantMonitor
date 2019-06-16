@@ -28,7 +28,7 @@ void initHW()
 	// Init UART
 	// Com2 115200 Baud
 	UB_Uart_Init();
-	UB_Uart_SendString(COM3, "UART INIT", LFCR);
+	//UB_Uart_SendString(COM3, "UART INIT", LFCR);
 //	GPIO_InitTypeDef GPIO_InitStructure;
 //	GPIO_InitTypeDef GPIO_InitStructure2;
 //	// Init LED
@@ -67,7 +67,7 @@ void GPIO_Config(void){
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-	/* PA 8,9,10,13,14,15 Solenoids
+	/* PA 8,9,10, PD 11,12,13 Solenoids
 	 * PB 8, 9 Water pumps
 	 * PE 0,1,2,3,4,5,6 //sensor supply
 	 * PD 0,1,2,3,4,5,6 //sensor supply
@@ -75,17 +75,26 @@ void GPIO_Config(void){
 
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA  | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9| GPIO_Pin_10; //GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1| GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1| GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6;
 	GPIO_Init(GPIOD, &GPIO_InitStructure);
 
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1| GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6;
 	GPIO_Init(GPIOE, &GPIO_InitStructure);
+
+	//relays are active low so pull-up
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9| GPIO_Pin_10;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOA, GPIO_Pin_8 | GPIO_Pin_9| GPIO_Pin_10);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOB, GPIO_Pin_8 | GPIO_Pin_9);
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13;
+	GPIO_Init(GPIOD, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOD, GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13);
+
 	//GPIO_SetBits(GPIOC, GPIO_Pin_12);
 }
 

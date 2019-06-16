@@ -226,9 +226,9 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 //		Delay(0x3FFF);
 
 		//Start water pump
-		GPIO_SetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
+		GPIO_ResetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
 		//Energize solenoid
-		GPIO_SetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
+		GPIO_ResetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
 
 		UB_Uart_SendString(COM3,"Started watering",LFCR);
 
@@ -254,9 +254,9 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 		//vTaskSuspend(waterTaskHndl);
 
 		//Stop water pump
-		GPIO_ResetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
+		GPIO_SetBits(allPots[pot].water_pump.PORT, allPots[pot].water_pump.PIN);
 		//De-energize solenoid
-		GPIO_ResetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
+		GPIO_SetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
 
 		time_pt = rtc_get_time();
 		sprintf(buf_time, "Stopped watering at %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
