@@ -120,7 +120,7 @@ void rtc_init(void){
 	struct tm *time_pt=NULL;
 
 	//enable supply for RTC
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);
+	GPIO_SetBits(GPIOC, GPIO_Pin_12);
 	Delay(0x3FFF);
 	do{
 		control.INTCN=0;
@@ -396,7 +396,7 @@ void rtc_set_alarm_s(uint8_t hour, uint8_t min, uint8_t sec)
 	hour = dec2bcd(hour);
 
 	uint8_t day = 0b10000001; // day (upper bit must be set)
-	//UB_Uart_SendString(COM2, "set sec", LFCR);
+	UB_Uart_SendString(COM2, "set sec", LFCR);
 	Delay(0x0FFF);
 	rtc_write_byte(&sec,  A1M1_ADDR); // second
 	Delay(0x0FFF);

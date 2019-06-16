@@ -22,11 +22,13 @@
 #include "rtc.h"
 #include "helpers.h"
 
+
+
 //#define SETTIME //define to set the hardcoded time on startup
 
-
 void initHW();
-void ADC_Config(uint16_t *ADC3ReservedMemory);
+void ADC1_Init(uint16_t* ADC1Data);
+
 uint16_t* getSensorValues(void);
 void I2C_Config(void);
 void Config_Wakeup_INT(void);
@@ -34,10 +36,10 @@ void PrepareSleepMode(void);
 void PrepareRunMode(void);
 void GPIO_LowPower_Config(void);
 void StartSleep(void);
-void SysTick_Configuration(void);
+void GPIO_Config(void);
+void SysTick_Configuration(void);;
 void RTC_Config(void);
-
-
+void Config_DS3231_Alarm_INT(void);
 
 
 /*
