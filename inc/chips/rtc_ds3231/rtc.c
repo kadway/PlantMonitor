@@ -120,7 +120,7 @@ void rtc_init(void){
 	struct tm *time_pt=NULL;
 
 	//enable supply for RTC
-	GPIO_SetBits(GPIOD, GPIO_Pin_12);
+	GPIO_SetBits(GPIOC, GPIO_Pin_12);
 	Delay(0x3FFF);
 	do{
 		control.INTCN=0;

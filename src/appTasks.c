@@ -44,7 +44,7 @@ void createTasks(void){
 	xTaskCreate(
 			PoolSensors,                 /* Function pointer */
 			"Task1",                   /* Task name - for debugging only*/
-			configMINIMAL_STACK_SIZE*2,         /* Stack depth in words */
+			configMINIMAL_STACK_SIZE*4,         /* Stack depth in words */
 			(void*) NULL,                     /* Pointer to tasks arguments (parameter) */
 			tskIDLE_PRIORITY + 2UL,           /* Task priority*/
 			&sensorTaskHndl                   /* Task handle */
@@ -126,22 +126,28 @@ void PoolSensors(void *pvParameters){
 		if(!adcready){
 			if(!ADC_GetSoftwareStartConvStatus(ADC1)){
 				//Enable voltage for moisture sensors
-				for(i=0;i<NUM_POTS; i++){
-					for(j=0;j<allPots[i].num_sensors; j++){
-						GPIO_SetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
-					}
-				}
+				//for(i=0;i<NUM_POTS; i++){
+					//for(j=0;j<allPots[i].num_sensors; j++){
+					//	GPIO_SetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
+					//}
+
+				//}
+				GPIO_SetBits(GPIOD, GPIOD_SENSORS_SUPPLY_PINS);
+				GPIO_SetBits(GPIOE, GPIOE_SENSORS_SUPPLY_PINS);
 				//start ADC conversions
+				vTaskDelay(1 * configTICK_RATE_HZ );
 				ADC_SoftwareStartConv(ADC1);
 			}
 		}
 		if(adcready){
 			//disable voltage for moisture sensors
-			for(i=0;i<NUM_POTS; i++){
-				for(j=0;j<allPots[i].num_sensors; j++){
-					GPIO_ResetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
-				}
-			}
+//			for(i=0;i<NUM_POTS; i++){
+//				for(j=0;j<allPots[i].num_sensors; j++){
+//					GPIO_ResetBits(allPots[i].sens_sup->PORT, allPots[i].sens_sup->PIN);
+//				}
+//			}
+			GPIO_ResetBits(GPIOD, GPIOD_SENSORS_SUPPLY_PINS);
+			GPIO_ResetBits(GPIOE, GPIOE_SENSORS_SUPPLY_PINS);
 			vTaskResume(waterTaskHndl);
 			vTaskSuspend(NULL);
 		}

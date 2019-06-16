@@ -36,7 +36,7 @@ void PrepareSleepMode(void);
 void PrepareRunMode(void);
 void GPIO_LowPower_Config(void);
 void StartSleep(void);
-
+void GPIO_Config(void);
 void SysTick_Configuration(void);;
 void RTC_Config(void);
 void Config_DS3231_Alarm_INT(void);
