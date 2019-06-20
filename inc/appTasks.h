@@ -6,17 +6,17 @@
 
 #include "platform.h"
 
-#define POT1_THRESHOLD 900
-#define POT2_THRESHOLD 900
-#define POT3_THRESHOLD 900
-#define POT4_THRESHOLD 900
-#define POT5_THRESHOLD 900
-#define POT6_THRESHOLD 900
+#define POT1_THRESHOLD 1700
+#define POT2_THRESHOLD 1700
+#define POT3_THRESHOLD 1700
+#define POT4_THRESHOLD 1700
+#define POT5_THRESHOLD 1700
+#define POT6_THRESHOLD 1700
 
 #define POT1_NUM_SENS 4
 #define POT2_NUM_SENS 1
 #define POT3_NUM_SENS 2
-#define POT4_NUM_SENS 4
+#define POT4_NUM_SENS 2
 #define POT5_NUM_SENS 2
 #define POT6_NUM_SENS 1
 
@@ -126,7 +126,8 @@
 #define POT6_SENSOR4_SUPPLY_PIN  GPIO_Pin_6
 
 #define MAX_SENS 4
-#define DEFAULT_WATER_TIME 30 //seconds
+//#define DEFAULT_WATER_TIME 3000
+#define DEFAULT_WATER_TIME 10000 //~31 seconds
 
 typedef enum{
 	POT1 = POT1_OFFS,
@@ -146,7 +147,7 @@ typedef struct{
 typedef struct {
 	uint8_t offset;
 	bool status;
-	uint8_t water_time;
+	uint16_t water_time;
 	uint16_t threshold;
 	uint8_t num_sensors;
 	Gpio_outputs_t water_pump;
