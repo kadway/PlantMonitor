@@ -6,26 +6,26 @@
 
 #include "platform.h"
 
-#define POT1_THRESHOLD 1700
-#define POT2_THRESHOLD 1700
-#define POT3_THRESHOLD 1700
-#define POT4_THRESHOLD 1700
-#define POT5_THRESHOLD 1700
-#define POT6_THRESHOLD 1700
+#define POT1_THRESHOLD 2000 //garlic
+#define POT2_THRESHOLD 2300 //tomato
+#define POT3_THRESHOLD 2200 //tamarillo
+#define POT4_THRESHOLD 2200 //paprika
+#define POT5_THRESHOLD 0  //potatos
+#define POT6_THRESHOLD 2300 //tomato
 
 #define POT1_NUM_SENS 4
 #define POT2_NUM_SENS 1
 #define POT3_NUM_SENS 2
 #define POT4_NUM_SENS 2
-#define POT5_NUM_SENS 2
+#define POT5_NUM_SENS 1
 #define POT6_NUM_SENS 1
 
 #define POT1_OFFS 0
 #define POT2_OFFS 4
-#define POT3_OFFS 5
-#define POT4_OFFS 7
-#define POT5_OFFS 11
-#define POT6_OFFS 13
+#define POT3_OFFS 7
+#define POT4_OFFS 10
+#define POT5_OFFS 5
+#define POT6_OFFS 9
 
 #define WATER_PUMP1_PORT GPIOB
 #define WATER_PUMP1_PIN  GPIO_Pin_8

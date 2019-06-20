@@ -203,6 +203,8 @@ void WaterPlants(void *pvParameters){
 
 		//UB_Uart_SendString(COM3, "resume sleep", LFCR);
 		//Delay(0xFFFF);
+
+		//vTaskResume(sensorTaskHndl);
 		vTaskResume(sleepTaskHndl);
 		//suspend itself
 		vTaskSuspend(NULL);
