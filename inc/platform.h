@@ -95,12 +95,17 @@ void Config_DS3231_Alarm_INT(void);
  *
  * 16 for moisture sensor supply (one for each ADC channel)
  * PE 0,1,2,3,4,5,6
- * PD 0,1,2,3,4,5,6,7
- * PC 12
+ * PD 0,1,2,3,4,5,6
+ * PC 12 - ds2321
  *
- * 9  for solenoid water valve activation relay
+ * 6  for solenoid water valve activation relay
+ * PA 8,9,10, solenoids
+ * PD 11,12,13 Solenoids
+ *
+ * free:
  * PC 9,10,11
- * PA 8,9,10,13,14,15,
+ * PA 8,9,10,13,14,15
+ * PD 7
  *
  * 2 for water pump activation relay
  * PB 8,9

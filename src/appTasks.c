@@ -88,7 +88,7 @@ void createTasks(void){
 //	xSemaphore = xSemaphoreCreateBinary();
    //create a timer
 	timerHndl1Sec = xTimerCreate( "timer1Sec", /* name */
-			pdMS_TO_TICKS(3000), 			   /* period/time */
+			pdMS_TO_TICKS(DEFAULT_WATER_TIME), 	  /* period/time */
 			pdFALSE, 						   /* auto reload */
 			(void*)0, 					       /* timer ID */
 			vTimerCallback1SecExpired); 	   /* callback */
@@ -192,7 +192,7 @@ void WaterPlants(void *pvParameters){
 		}
 
 		for (PotNum=0; PotNum<NUM_POTS; PotNum++){
-			sprintf(buf, "Check pot %d", PotNum);
+			sprintf(buf, "Check pot %d", PotNum+1);
 			UB_Uart_SendString(COM3, buf, LFCR);
 			allPots[PotNum].status=CheckMoisture(PotNum);
 			if(allPots[PotNum].status==DRY){
@@ -201,8 +201,8 @@ void WaterPlants(void *pvParameters){
 		}
 
 
-		UB_Uart_SendString(COM3, "resume sleep", LFCR);
-		Delay(0xFFFF);
+		//UB_Uart_SendString(COM3, "resume sleep", LFCR);
+		//Delay(0xFFFF);
 		vTaskResume(sleepTaskHndl);
 		//suspend itself
 		vTaskSuspend(NULL);
@@ -215,7 +215,7 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 		//create a timer for watering (Water pump ON)
 
 		time_pt = rtc_get_time();
-		sprintf(buf_time, "Water pot at %d:%d:%d - %d/%d", time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
+		sprintf(buf_time, "Water pot %d at %d:%d:%d - %d/%d", pot+1, time_pt->hour, time_pt->min, time_pt->sec, time_pt->mday, time_pt->mon);
 		UB_Uart_SendString(COM3, buf_time, LFCR);
 //		time_pt->min = time_pt->min + allPots[pot].water_time;
 //		rtc_set_alarm(time_pt);
@@ -230,7 +230,7 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 		//Energize solenoid
 		GPIO_ResetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
 
-		UB_Uart_SendString(COM3,"Started watering",LFCR);
+		//UB_Uart_SendString(COM3,"Started watering",LFCR);
 
 		//wait for alarm
 		if (xTimerStart(timerHndl1Sec, 0)!=pdPASS) {
@@ -238,7 +238,7 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 			Delay(0xFFFF);
 		}
 
-		UB_Uart_SendString(COM3,"Started timer",LFCR);
+		//UB_Uart_SendString(COM3,"Started timer",LFCR);
 		vTaskSuspend(NULL);
 //		while(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_12)==Bit_SET){
 //			vTaskDelay(1 * configTICK_RATE_HZ );
@@ -259,7 +259,7 @@ uint8_t WaterPot(uint8_t pot, int8_t temperature){
 		GPIO_SetBits(allPots[pot].solenoid.PORT, allPots[pot].solenoid.PIN);
 
 		time_pt = rtc_get_time();
-		sprintf(buf_time, "Stopped watering at %d:%d:%d", time_pt->hour, time_pt->min, time_pt->sec);
+		sprintf(buf_time, "Stopped watering pot %d at %d:%d:%d", pot+1, time_pt->hour, time_pt->min, time_pt->sec);
 		UB_Uart_SendString(COM3, buf_time, LFCR);
 
 	return 0;
@@ -273,11 +273,11 @@ uint8_t CheckMoisture(uint8_t PotNum){
 	uint16_t* ADC1Data=NULL;
 	ADC1Data=getSensorValues();
 
-	sprintf(buf, "sensors number =  %d ", allPots[PotNum].num_sensors);
-	UB_Uart_SendString(COM3, buf, LFCR);
+	//sprintf(buf, "sensors number =  %d ", allPots[PotNum].num_sensors);
+	//UB_Uart_SendString(COM3, buf, LFCR);
 
-	sprintf(buf, "threshold =  %d mV", allPots[PotNum].threshold);
-	UB_Uart_SendString(COM3, buf, LFCR);
+	//sprintf(buf, "threshold =  %d mV", allPots[PotNum].threshold);
+	//UB_Uart_SendString(COM3, buf, LFCR);
 
 	for (i=0; i<allPots[PotNum].num_sensors; i++){
 		avg+=ADC1Data[(allPots[PotNum].offset)+i];
@@ -289,15 +289,17 @@ uint8_t CheckMoisture(uint8_t PotNum){
 
 	avg= avg/allPots[PotNum].num_sensors;
 
-	sprintf(buf, "avg =  %d mV", avg);
-	UB_Uart_SendString(COM3, buf, LFCR);
+	//sprintf(buf, "avg =  %d mV", avg);
+	//UB_Uart_SendString(COM3, buf, LFCR);
 	//sprintf(buf, "avg =  %d mV", avg);
 	//UB_Uart_SendString(COM3, buf, LFCR);
 	if(avg<allPots[PotNum].threshold){
-		UB_Uart_SendString(COM3, "return dry", LFCR);
+		sprintf(buf, "Pot %d is DRY with Average %d mV", PotNum+1, avg);
+		UB_Uart_SendString(COM3, buf, LFCR);
 		return DRY; //need to water
 	}
-	UB_Uart_SendString(COM3, "return moist", LFCR);
+	sprintf(buf, "Pot %d is MOIST with Average %d mV", PotNum+1, avg);
+	UB_Uart_SendString(COM3, buf, LFCR);
 	//no need to water
 	return MOIST;
 }
