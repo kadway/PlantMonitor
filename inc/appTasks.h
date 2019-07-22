@@ -7,11 +7,16 @@
 #include "platform.h"
 
 #define POT1_THRESHOLD 2000 //garlic
-#define POT2_THRESHOLD 2300 //tomato
+//1940mV ok
+#define POT2_THRESHOLD 900 //tomato
+//1171mV ok //740 dry
 #define POT3_THRESHOLD 2200 //tamarillo
-#define POT4_THRESHOLD 2200 //paprika
+//2241 mV ok
+#define POT4_THRESHOLD 1800 //paprika
+//2234 mv ok
 #define POT5_THRESHOLD 0  //potatos
-#define POT6_THRESHOLD 2300 //tomato
+#define POT6_THRESHOLD 1500 //tomato
+// 1993 mV ok
 
 #define POT1_NUM_SENS 4
 #define POT2_NUM_SENS 1
