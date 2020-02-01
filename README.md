@@ -1,4 +1,7 @@
 
+###Current repo was discontinued and work is now migrated to new repo using the newer CMSIS V2 FreeRTOS API. 
+new repo: https://github.com/kadway/stm32f4-freertos-plant-monitor.git
+
 ## Plant monitor with STM32F4Discovery using FreeRTOS
 
 This project is for measuring the soil moisture of my balcony plants and water them as necessary.
